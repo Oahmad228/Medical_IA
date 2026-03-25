@@ -24,6 +24,25 @@ enum ConversationRole {
   DOCTOR
 }
 
+enum AssistantPersona {
+  DOCTOR
+  NURSE
+  OWL
+  RESCUE_DOG
+}
+
+enum DoctorPatientLinkStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+}
+
+enum PatientReportStatus {
+  DRAFT
+  APPROVED
+  SENT
+}
+
 enum MessageAuthor {
   USER
   ASSISTANT
@@ -46,6 +65,10 @@ model User {
   conversations  Conversation[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
+
+  doctorPatientLinks DoctorPatientLink[] @relation("DoctorPatientLinkDoctor")
+  pairingOtps PairingOtp[] @relation("PairingOtpDoctor")
+  patientReports PatientReport[] @relation("PatientReportDoctor")
 }
 
 model EmailVerificationToken {
@@ -74,11 +97,19 @@ model Patient {
   age             Int?
   sex             String?
   city            String?
+  assistantPersona AssistantPersona @default(DOCTOR)
+  // Legacy columns (exist in some dev DBs). Kept for safety to avoid data loss during migration.
+  assistantType   String?
+  assistantEnvironment String?
   medicalMemory   String?
   medicalMemoryUpdatedAt DateTime?
   createdAt       DateTime         @default(now())
   symptomReports  SymptomReport[]
   doctorAnalyses  DoctorAnalysis[]
+
+  doctorPatientLinks DoctorPatientLink[] @relation("DoctorPatientLinkPatient")
+  pairingOtps PairingOtp[] @relation("PairingOtpPatient")
+  patientReports PatientReport[] @relation("PatientReportPatient")
 }
 
 model DoctorProfile {
@@ -150,4 +181,58 @@ model DoctorAnalysis {
   hypothesesJson            String
   patientFriendlyExplanation String
   createdAt                 DateTime @default(now())
+}
+
+model DoctorPatientLink {
+  id           Int                       @id @default(autoincrement())
+  doctorUserId Int
+  doctor       User                      @relation("DoctorPatientLinkDoctor", fields: [doctorUserId], references: [id])
+  patientId    Int
+  patient      Patient                   @relation("DoctorPatientLinkPatient", fields: [patientId], references: [id])
+  status       DoctorPatientLinkStatus @default(PENDING)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@index([doctorUserId, patientId])
+}
+
+model PairingOtp {
+  id           Int      @id @default(autoincrement())
+  doctorUserId Int
+  doctor       User     @relation("PairingOtpDoctor", fields: [doctorUserId], references: [id])
+  patientId    Int
+  patient      Patient  @relation("PairingOtpPatient", fields: [patientId], references: [id])
+  otpHash      String   @unique
+  expiresAt    DateTime
+  attempts     Int      @default(0)
+  consumedAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([doctorUserId, patientId])
+}
+
+model PatientReport {
+  id           Int               @id @default(autoincrement())
+  patientId    Int
+  patient      Patient          @relation("PatientReportPatient", fields: [patientId], references: [id])
+  doctorUserId Int
+  doctor       User             @relation("PatientReportDoctor", fields: [doctorUserId], references: [id])
+  status       PatientReportStatus @default(DRAFT)
+
+  triageLevel  String?
+  triageSummary String?
+  guidance     String?
+  nextStep     String?
+  specialist   String?
+
+  doctorDraftText String
+  patientFinalText String?
+
+  approvedAt   DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([patientId, status])
+  @@index([doctorUserId, patientId, createdAt])
 }

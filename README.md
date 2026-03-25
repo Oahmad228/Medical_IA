@@ -13,6 +13,8 @@ Ce projet est développé dans un **contexte académique** afin de démontrer l'
 
 ⚠️ Ce système **ne remplace pas un médecin**. Il s'agit uniquement d'un outil d'assistance.
 
+Document de cadrage fusionne (version longue): `docs/project_overview.md`
+
 ---
 
 ## 2. Objectif du projet
@@ -106,6 +108,7 @@ Le système va :
 1. analyser la description
 2. poser des questions supplémentaires si nécessaire
 3. déterminer le niveau d'urgence
+4. prendre en compte des images jointes (si fournies, mode live)
 
 ---
 
@@ -147,6 +150,7 @@ Le médecin peut :
 - consulter les échanges enregistrés
 - obtenir une synthèse et des points de vigilance
 - recevoir une explication “patient-friendly”
+- valider le rapport avant diffusion côté patient (workflow draft -> approve)
 
 ---
 
@@ -215,8 +219,19 @@ Devient :
 - `POST /admin/doctor-requests/:userId/reject`
 
 ### Patients
+- `GET /patients/:id/history` (non accessible côté patient)
 
-- `GET /patients/:id/history`
+### Médecin / OTP / Rapports
+
+- `POST /doctor/patient-link/request-otp`
+- `POST /doctor/patient-link/confirm-otp`
+- `GET /doctor/patient-link/status`
+- `GET /doctor/reports/latest`
+- `POST /doctor/reports/:reportId/approve`
+
+### Patient / Rapports validés
+
+- `GET /patient/reports/latest`
 
 ---
 
@@ -294,4 +309,150 @@ Ce projet est un **prototype académique** :
 - recommandations générales et prudentes
 - sécurité simplifiée (sessions en mémoire, prototype)
 - pas de diagnostic clinique
+
+---
+
+## 11. Propositions produit (prochaine étape)
+
+Cette section décrit des **propositions de conception** (sans implémentation immédiate), alignées avec ton besoin: expérience patient plus engageante, et workflow médecin plus strict avant retour au patient.
+
+### 11.1 Expérience Patient uniquement (chibi + niveau de préoccupation)
+
+- Le patient ne voit **pas** le rapport longitudinal interne.
+- Le patient voit uniquement:
+  - son historique de conversation
+  - les réponses de son agent IA
+  - un indicateur visuel via mascotte/chibi
+- L'indicateur de préoccupation est porté par le comportement du chibi:
+  - **GREEN**: posture calme, respiration/méditation, message rassurant
+  - **ORANGE**: posture attentive, animation d'analyse, message de vigilance
+  - **RED**: posture d'alerte, animation dynamique, message "urgence"
+
+Proposition UI:
+
+- Une carte fixe à droite: personnage + bulle texte courte
+- Bulle cliquable pour afficher le détail "ce que le patient doit faire maintenant"
+- Pas de jargon médical, consignes simples et actionnables
+
+### 11.2 Choix de l'assistant lors de l'inscription patient
+
+Lors de la création de compte patient, proposer un choix de persona visuel (chibi) qui restera son assistant principal:
+
+- Docteur (humain)
+- Infirmier/Infirmière (humain)
+- Hibou (animal, calme/observateur)
+- Chien de secours (animal, protecteur/alerte)
+
+Règles:
+
+- Valeur par défaut pour les comptes existants: **Docteur**
+- Le persona n'impacte pas la logique médicale, uniquement l'UX (avatar, ton de la bulle, animations)
+- Le patient peut modifier son persona plus tard dans ses paramètres (option recommandée)
+
+### 11.3 Espace médecin (sans indicateur chibi)
+
+- Le médecin n'a pas d'indicateur "niveau de préoccupation" visuel.
+- Il consulte:
+  - rapport IA structuré
+  - historique clinique utile
+  - points de vigilance
+- Le médecin garde l'interprétation clinique finale.
+
+### 11.4 Liaison médecin-patient avec OTP
+
+Proposition de flux pour associer un médecin à un patient:
+
+1. Le médecin saisit l'identifiant du patient.
+2. Le système envoie un OTP au patient par email.
+3. Le médecin renseigne cet OTP pour confirmer l'association.
+4. Une fois validé, le médecin accède au rapport IA du patient.
+
+Contraintes de sécurité recommandées:
+
+- OTP court (6 chiffres), expiration rapide (ex: 10 minutes)
+- Nombre max d'essais (ex: 5), puis blocage temporaire
+- Journalisation des tentatives et confirmations
+
+### 11.5 Double validation du rapport avant retour patient
+
+Workflow cible:
+
+1. L'agent médecin produit une proposition de rapport clinique.
+2. Le médecin relit, édite, puis confirme.
+3. Seulement après confirmation, une version patient est générée:
+   - explication vulgarisée
+   - consignes concrètes
+   - niveau de priorité compréhensible
+
+Ce mécanisme évite qu'un résumé non validé atteigne le patient.
+
+### 11.6 Restitution au patient (mail + bulle chibi)
+
+Après validation médecin:
+
+- Envoi d'un email patient (résumé + recommandations)
+- Affichage d'un message dans l'application via la bulle du chibi
+- Le patient clique la bulle pour ouvrir une fenêtre "Ce que mon médecin me recommande"
+
+Contenu minimal affiché au patient:
+
+- Ce qu'il faut faire maintenant
+- Signaux d'alerte à surveiller
+- Quand recontacter / consulter en urgence
+- Spécialiste recommandé (si applicable)
+
+### 11.7 Données et modèle (proposition)
+
+Pour préparer l'implémentation future, prévoir:
+
+- `Patient.assistantPersona` (DOCTOR, NURSE, OWL, RESCUE_DOG)
+- `DoctorPatientLink` (doctorId, patientId, status, linkedAt)
+- `PairingOtp` (codeHash, expiresAt, attempts, consumedAt)
+- `DoctorValidatedReport` (draftByAI, editedByDoctor, approvedAt)
+- `PatientFacingReport` (finalText, sentEmailAt, shownInAppAt)
+
+### 11.8 API cible (proposition)
+
+Exemples d'endpoints à planifier:
+
+- `POST /patient/preferences/assistant-persona`
+- `POST /doctor/patient-link/request-otp`
+- `POST /doctor/patient-link/confirm-otp`
+- `POST /doctor/reports/:id/approve`
+- `GET /patient/reports/latest`
+- `POST /patient/reports/:id/acknowledge`
+
+### 11.9 Plan d'implémentation conseillé
+
+- **Phase 1 (rapide)**: persona patient + UI chibi + défaut "Docteur" pour comptes existants
+- **Phase 2 (sécurité)**: liaison médecin-patient par OTP
+- **Phase 3 (qualité médicale)**: draft IA médecin + édition + approbation obligatoire
+- **Phase 4 (communication)**: génération version patient + email + bulle cliquable
+
+Ce découpage réduit les risques et permet de tester chaque bloc métier séparément.
+
+---
+
+## 12. Etat d'implementation (mars 2026)
+
+Deja en place dans le code:
+
+- Le patient ne voit pas la memoire medicale persistante dans son panneau.
+- Memoire medicale persistante (`Patient.medicalMemory`) alimentee au fil des conversations.
+- Protection d'acces sur `GET /patients/:id/history` avec controle de role/proprietaire.
+- Association medecin/patient via OTP (backend + UI basique cote medecin).
+- Creation de rapports patient en mode `DRAFT` puis validation du medecin.
+- Exposition du rapport patient uniquement apres validation (`GET /patient/reports/latest`).
+- Choix de persona assistant a l'inscription patient (`DOCTOR`, `NURSE`, `OWL`, `RESCUE_DOG`).
+- Valeur par defaut pour comptes existants et nouveaux: `DOCTOR`.
+- UI patient: carte chibi dynamique selon le niveau (`GREEN`, `ORANGE`, `RED`).
+- UI patient: images chibi reelles (assets web telecharges), plus d'emojis.
+- UI medecin: indicateur chibi retire, focus sur rapport/analyse textuelle.
+- Upload d'images dans le chat (patient et medecin) transmis au contexte IA.
+
+Pas encore implemente (prochaine phase):
+
+- Edition du draft medecin avant validation (UI encore simplifiee).
+- Accuse reception patient (marqueur "lu" / "acquitté") et historique de consultation.
+- Durcissement securite (audits, journalisation fine des tentatives OTP, suppression des delais sensibles).
 

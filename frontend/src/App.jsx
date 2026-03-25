@@ -120,6 +120,36 @@ function triageMeta(level) {
   return { icon: "+", label: "Stable", className: "risk-green" };
 }
 
+async function filesToDataUrls(fileList, maxCount = 3) {
+  const files = Array.from(fileList || []).filter((f) => String(f.type || "").startsWith("image/"));
+  const picked = files.slice(0, maxCount);
+  return Promise.all(
+    picked.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(new Error("Impossible de lire l'image."));
+          reader.readAsDataURL(file);
+        })
+    )
+  );
+}
+
+function patientAssistantMeta(persona) {
+  const key = String(persona || "DOCTOR").toUpperCase();
+  if (key === "NURSE") {
+    return { label: "Infirmier", image: "/chibi/nurse.png" };
+  }
+  if (key === "OWL") {
+    return { label: "Hibou", image: "/chibi/owl.png" };
+  }
+  if (key === "RESCUE_DOG") {
+    return { label: "Chien de secours", image: "/chibi/rescue_dog.png" };
+  }
+  return { label: "Docteur", image: "/chibi/doctor.png" };
+}
+
 function TopBar({ title, subtitle, health, onLogout }) {
   return (
     <header className="topbar">
@@ -175,6 +205,7 @@ function AuthPanel({
     age: "",
     sex: "",
     city: "",
+    assistantPersona: "DOCTOR",
   });
 
   const [doctorSignup, setDoctorSignup] = useState({
@@ -401,6 +432,18 @@ function AuthPanel({
                     setPatientSignup((prev) => ({ ...prev, city: e.target.value }))
                   }
                 />
+                <label>Assistant chibi</label>
+                <select
+                  value={patientSignup.assistantPersona}
+                  onChange={(e) =>
+                    setPatientSignup((prev) => ({ ...prev, assistantPersona: e.target.value }))
+                  }
+                >
+                  <option value="DOCTOR">Docteur (humain)</option>
+                  <option value="NURSE">Infirmier/Infirmiere (humain)</option>
+                  <option value="OWL">Hibou (animal)</option>
+                  <option value="RESCUE_DOG">Chien de secours (animal)</option>
+                </select>
               </>
             ) : (
               <>
@@ -611,6 +654,9 @@ function ChatLayout({
   sending,
   sendError,
   rightPanel,
+  imagePreviews,
+  onPickImages,
+  onRemoveImage,
 }) {
   return (
     <section className="chat-shell">
@@ -680,6 +726,32 @@ function ChatLayout({
             }
             required
           />
+          <div className="image-uploader">
+            <label className="image-uploader-label">Images (optionnel, max 3)</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={async (e) => {
+                if (typeof onPickImages === "function") {
+                  await onPickImages(e.target.files);
+                  e.target.value = "";
+                }
+              }}
+            />
+            {Array.isArray(imagePreviews) && imagePreviews.length > 0 ? (
+              <div className="image-preview-list">
+                {imagePreviews.map((src, idx) => (
+                  <div key={`${src}-${idx}`} className="image-preview-item">
+                    <img src={src} alt={`piece-jointe-${idx + 1}`} />
+                    <button type="button" className="ghost small" onClick={() => onRemoveImage?.(idx)}>
+                      Retirer
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <div className="composer-extra">
             <input
               placeholder="Localisation (optionnel)"
@@ -715,11 +787,22 @@ function PatientArea({ session, health, onLogout }) {
   const [conversations, setConversations] = useState([]);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [composer, setComposer] = useState({ message: "", location: "", patientId: "" });
+  const [composer, setComposer] = useState({ message: "", location: "", patientId: "", images: [] });
   const [lastTriage, setLastTriage] = useState("GREEN");
   // Patient should not see longitudinal medical reports here.
   const [chatSending, setChatSending] = useState(false);
   const [chatError, setChatError] = useState("");
+  const [latestReport, setLatestReport] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
+
+  async function refreshPatientReport() {
+    try {
+      const data = await api("/patient/reports/latest", { token });
+      setLatestReport(data?.report || null);
+    } catch (_e) {
+      setLatestReport(null);
+    }
+  }
 
   async function refreshConversations(preferredId) {
     const data = await api("/chat/conversations", { token });
@@ -781,6 +864,7 @@ function PatientArea({ session, health, onLogout }) {
         patientId: composer.patientId.trim()
           ? Number(composer.patientId)
           : session.user.patientId,
+        images: Array.isArray(composer.images) ? composer.images : [],
       };
 
       // Optimistic UI: show user's message + streaming assistant bubble
@@ -792,7 +876,7 @@ function PatientArea({ session, health, onLogout }) {
         { id: tempAssistantId, author: "ASSISTANT", content: "", createdAt: new Date().toISOString() },
       ]);
 
-      setComposer((prev) => ({ ...prev, message: "" }));
+      setComposer((prev) => ({ ...prev, message: "", images: [] }));
 
       let streamedTriage = null;
       try {
@@ -826,6 +910,7 @@ function PatientArea({ session, health, onLogout }) {
       if (streamedTriage) setLastTriage(streamedTriage);
       await loadConversation(conversationId);
       await refreshConversations(conversationId);
+      await refreshPatientReport();
     } catch (error) {
       setChatError(error.message || "Erreur d'envoi du message.");
       if (conversationId) {
@@ -848,10 +933,29 @@ function PatientArea({ session, health, onLogout }) {
       setConversations([]);
       setMessages([]);
     });
+    refreshPatientReport();
+    const timer = setInterval(() => {
+      refreshPatientReport();
+    }, 15000);
+    return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const risk = triageMeta(lastTriage);
+  const assistant = patientAssistantMeta(session?.user?.assistantPersona);
+  const effectiveTriage = String(latestReport?.triageLevel || lastTriage).toUpperCase();
+  const chibiState =
+    effectiveTriage === "RED"
+      ? "chibi-red"
+      : effectiveTriage === "ORANGE"
+      ? "chibi-orange"
+      : "chibi-green";
+  const chibiMessage = latestReport?.patientFinalText
+    ? "Mon medecin a valide un rapport. Cliquez pour le lire."
+    : effectiveTriage === "RED"
+    ? "Alerte: consultez en urgence maintenant."
+    : effectiveTriage === "ORANGE"
+    ? "Vigilance: une consultation rapide est conseillee."
+    : "Tout est calme. Continuez la surveillance.";
 
   return (
     <>
@@ -877,19 +981,73 @@ function PatientArea({ session, health, onLogout }) {
         onSend={sendMessage}
         sending={chatSending}
         sendError={chatError}
+        imagePreviews={composer.images}
+        onPickImages={async (files) => {
+          try {
+            const dataUrls = await filesToDataUrls(files, 3);
+            setComposer((prev) => ({ ...prev, images: dataUrls }));
+          } catch (_e) {
+            setChatError("Impossible de charger l'image.");
+          }
+        }}
+        onRemoveImage={(index) =>
+          setComposer((prev) => ({
+            ...prev,
+            images: prev.images.filter((_item, idx) => idx !== index),
+          }))
+        }
         rightPanel={
           <>
-            <h2>Niveau de preoccupation</h2>
-            <div className={`risk-card ${risk.className}`}>
-              <span className="risk-icon">{risk.icon}</span>
-              <div>
-                <strong>{String(lastTriage).toUpperCase()}</strong>
-                <p>{risk.label}</p>
+            <h2>Assistant patient</h2>
+            <div
+              className={`chibi-card ${chibiState}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                if (latestReport?.patientFinalText) setReportOpen(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && latestReport?.patientFinalText) setReportOpen(true);
+              }}
+            >
+              <div className="chibi-avatar" aria-hidden="true">
+                <img src={assistant.image} alt={assistant.label} />
+              </div>
+              <div className="chibi-text">
+                <strong>{assistant.label}</strong>
+                <p>{chibiMessage}</p>
               </div>
             </div>
           </>
         }
       />
+
+      {reportOpen && latestReport?.patientFinalText ? (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setReportOpen(false)}
+        >
+          <div className="modal-window" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>Rapport validé par votre médecin</h3>
+              <button type="button" className="ghost modal-close" onClick={() => setReportOpen(false)}>
+                Fermer
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="muted">
+                Niveau de vigilance: {String(latestReport?.triageLevel || "").toUpperCase()}
+              </div>
+              <div className="output modal-output">{latestReport.patientFinalText}</div>
+              <div className="muted">
+                Si votre état s'aggrave, contactez immédiatement un service médical d'urgence.
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -899,10 +1057,44 @@ function DoctorArea({ session, health, onLogout }) {
   const [conversations, setConversations] = useState([]);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [composer, setComposer] = useState({ message: "", location: "", patientId: "" });
-  const [lastTriage, setLastTriage] = useState("GREEN");
+  const [composer, setComposer] = useState({ message: "", location: "", patientId: "", images: [] });
   const [chatSending, setChatSending] = useState(false);
   const [chatError, setChatError] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [pairStatus, setPairStatus] = useState("NONE");
+  const [pairError, setPairError] = useState("");
+  const [pairLoading, setPairLoading] = useState(false);
+  const [latestDraftReport, setLatestDraftReport] = useState(null);
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [approveError, setApproveError] = useState("");
+  const [approveLoading, setApproveLoading] = useState(false);
+
+  async function refreshPairStatus(patientId) {
+    try {
+      if (!patientId) return setPairStatus("NONE");
+      const data = await api(`/doctor/patient-link/status?patientId=${patientId}`, { token });
+      setPairStatus(data?.status || "NONE");
+    } catch (_e) {
+      setPairStatus("NONE");
+    }
+  }
+
+  async function refreshLatestDraft(patientId) {
+    try {
+      setApproveError("");
+      setDraftLoading(true);
+      if (!patientId) {
+        setLatestDraftReport(null);
+        return;
+      }
+      const data = await api(`/doctor/reports/latest?patientId=${patientId}`, { token });
+      setLatestDraftReport(data?.report || null);
+    } catch (_e) {
+      setLatestDraftReport(null);
+    } finally {
+      setDraftLoading(false);
+    }
+  }
 
   async function refreshConversations(preferredId) {
     const data = await api("/chat/conversations", { token });
@@ -925,12 +1117,6 @@ function DoctorArea({ session, health, onLogout }) {
   async function loadConversation(id) {
     const conversation = await api(`/chat/conversations/${id}/messages`, { token });
     setMessages(conversation.messages || []);
-    const latestAssistant = [...(conversation.messages || [])]
-      .reverse()
-      .find((m) => m.author === "ASSISTANT" && m.triageLevel);
-    if (latestAssistant?.triageLevel) {
-      setLastTriage(latestAssistant.triageLevel);
-    }
   }
 
   async function createConversation() {
@@ -949,11 +1135,25 @@ function DoctorArea({ session, health, onLogout }) {
       return;
     }
 
+    const patientId = composer.patientId.trim() ? Number(composer.patientId) : null;
+    if (!patientId || Number.isNaN(patientId)) {
+      setChatError("ID patient requis (et association OTP obligatoire).");
+      return;
+    }
+
     setChatSending(true);
     setChatError("");
     let conversationId = selectedConversationId;
 
     try {
+      const link = await api(`/doctor/patient-link/status?patientId=${patientId}`, {
+        token,
+      });
+      if (link?.status !== "ACTIVE") {
+        setChatError("Associez le patient via OTP avant d'envoyer un rapport.");
+        return;
+      }
+
       if (!conversationId) {
         conversationId = await createConversation();
       }
@@ -961,6 +1161,7 @@ function DoctorArea({ session, health, onLogout }) {
       const payload = {
         message: trimmedMessage,
         patientId: composer.patientId.trim() ? Number(composer.patientId) : undefined,
+        images: Array.isArray(composer.images) ? composer.images : [],
       };
 
       const tempUserId = `tmp-user-${Date.now()}`;
@@ -970,18 +1171,13 @@ function DoctorArea({ session, health, onLogout }) {
         { id: tempUserId, author: "USER", content: trimmedMessage, createdAt: new Date().toISOString() },
         { id: tempAssistantId, author: "ASSISTANT", content: "", createdAt: new Date().toISOString() },
       ]);
-      setComposer((prev) => ({ ...prev, message: "" }));
+      setComposer((prev) => ({ ...prev, message: "", images: [] }));
 
-      let streamedTriage = null;
       try {
         await apiStreamChatMessage(conversationId, {
           token,
           payload,
           onEvent: (evt) => {
-            if (evt?.type === "meta" && evt.triageLevel) {
-              streamedTriage = evt.triageLevel;
-              setLastTriage(evt.triageLevel);
-            }
             if (evt?.type === "delta" && typeof evt.delta === "string") {
               setMessages((prev) =>
                 prev.map((m) =>
@@ -992,17 +1188,15 @@ function DoctorArea({ session, health, onLogout }) {
           },
         });
       } catch (_streamError) {
-        const result = await api(`/chat/conversations/${conversationId}/messages`, {
+        await api(`/chat/conversations/${conversationId}/messages`, {
           method: "POST",
           token,
           payload,
         });
-        if (result.triageLevel) setLastTriage(result.triageLevel);
       }
-
-      if (streamedTriage) setLastTriage(streamedTriage);
       await loadConversation(conversationId);
       await refreshConversations(conversationId);
+      await refreshLatestDraft(patientId);
     } catch (error) {
       setChatError(error.message || "Erreur d'envoi du message.");
       if (conversationId) {
@@ -1025,8 +1219,6 @@ function DoctorArea({ session, health, onLogout }) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const risk = triageMeta(lastTriage);
 
   return (
     <>
@@ -1052,20 +1244,140 @@ function DoctorArea({ session, health, onLogout }) {
         onSend={sendMessage}
         sending={chatSending}
         sendError={chatError}
+        imagePreviews={composer.images}
+        onPickImages={async (files) => {
+          try {
+            const dataUrls = await filesToDataUrls(files, 3);
+            setComposer((prev) => ({ ...prev, images: dataUrls }));
+          } catch (_e) {
+            setChatError("Impossible de charger l'image.");
+          }
+        }}
+        onRemoveImage={(index) =>
+          setComposer((prev) => ({
+            ...prev,
+            images: prev.images.filter((_item, idx) => idx !== index),
+          }))
+        }
         rightPanel={
           <>
-            <h2>Radar clinique</h2>
-            <div className={`risk-card ${risk.className}`}>
-              <span className="risk-icon">{risk.icon}</span>
-              <div>
-                <strong>{String(lastTriage).toUpperCase()}</strong>
-                <p>{risk.label}</p>
-              </div>
-            </div>
+            <h2>Association médecin-patient (OTP)</h2>
             <p className="muted">
-              Les hypotheses du modele sont des aides a la decision et ne remplacent pas le
-              jugement clinique.
+              1) Entrez l'ID patient dans le champ du dossier. 2) Demandez l'OTP. 3) Confirmez avec le code reçu par email.
             </p>
+
+            <div className="pairing-box">
+              <div className="muted">
+                Statut: <strong>{String(pairStatus).toUpperCase()}</strong>
+              </div>
+
+              {pairError ? <p className="error-text">{pairError}</p> : null}
+
+              <button
+                type="button"
+                disabled={pairLoading || !composer.patientId.trim()}
+                onClick={async () => {
+                  try {
+                    setPairError("");
+                    setPairLoading(true);
+                    const pid = Number(composer.patientId);
+                    if (!pid || Number.isNaN(pid)) {
+                      setPairError("ID patient invalide.");
+                      return;
+                    }
+                    await api("/doctor/patient-link/request-otp", {
+                      method: "POST",
+                      token,
+                      payload: { patientId: pid },
+                    });
+                    setOtpCode("");
+                    setPairStatus("PENDING");
+                    await refreshPairStatus(pid);
+                  } catch (e) {
+                    setPairError(e.message || "Erreur OTP.");
+                  } finally {
+                    setPairLoading(false);
+                  }
+                }}
+              >
+                {pairLoading ? "Envoi OTP..." : "Demander OTP"}
+              </button>
+
+              <label>Code OTP</label>
+              <input value={otpCode} onChange={(e) => setOtpCode(e.target.value)} placeholder="ex: 123456" />
+
+              <button
+                type="button"
+                disabled={pairLoading || !composer.patientId.trim() || !otpCode.trim()}
+                onClick={async () => {
+                  try {
+                    setPairError("");
+                    setPairLoading(true);
+                    const pid = Number(composer.patientId);
+                    await api("/doctor/patient-link/confirm-otp", {
+                      method: "POST",
+                      token,
+                      payload: { patientId: pid, otp: otpCode.trim() },
+                    });
+                    setOtpCode("");
+                    await refreshPairStatus(pid);
+                  } catch (e) {
+                    setPairError(e.message || "OTP incorrect.");
+                  } finally {
+                    setPairLoading(false);
+                  }
+                }}
+              >
+                Confirmer OTP
+              </button>
+            </div>
+
+            <h2>Validation du rapport</h2>
+            {approveError ? <p className="error-text">{approveError}</p> : null}
+
+            <div className="history-block">
+              {draftLoading ? (
+                <p className="muted">Chargement du dernier draft...</p>
+              ) : latestDraftReport ? (
+                <>
+                  <div className="muted">
+                    Triage: <strong>{String(latestDraftReport?.triageLevel || "").toUpperCase()}</strong>
+                  </div>
+                  <div className="output">
+                    {String(latestDraftReport?.doctorDraftText || "").slice(0, 900)}
+                    {String(latestDraftReport?.doctorDraftText || "").length > 900 ? "..." : ""}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={approveLoading}
+                    onClick={async () => {
+                      try {
+                        setApproveLoading(true);
+                        setApproveError("");
+                        const rid = latestDraftReport.id;
+                        await api(`/doctor/reports/${rid}/approve`, {
+                          method: "POST",
+                          token,
+                          payload: {},
+                        });
+                        const pid = Number(composer.patientId);
+                        if (!Number.isNaN(pid) && pid > 0) {
+                          await refreshLatestDraft(pid);
+                        }
+                      } catch (e) {
+                        setApproveError(e.message || "Erreur validation.");
+                      } finally {
+                        setApproveLoading(false);
+                      }
+                    }}
+                  >
+                    {approveLoading ? "Validation..." : "Valider et envoyer au patient"}
+                  </button>
+                </>
+              ) : (
+                <p className="muted">Aucun rapport draft pour cet patient.</p>
+              )}
+            </div>
           </>
         }
       />

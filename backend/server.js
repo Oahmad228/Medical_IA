@@ -54,6 +54,13 @@ const SMTP_PASS = process.env.SMTP_PASS || "";
 const SMTP_FROM = process.env.SMTP_FROM || "Medical AI <no-reply@medical-ai.local>";
 const APP_BASE_URL = process.env.APP_BASE_URL || "http://localhost:5173";
 const EMAIL_TOKEN_TTL_MINUTES = Number(process.env.EMAIL_TOKEN_TTL_MINUTES || 30);
+const ASSISTANT_PERSONAS = ["DOCTOR", "NURSE", "OWL", "RESCUE_DOG"];
+const DOCTOR_PATIENT_OTP_TTL_MINUTES = Number(process.env.DOCTOR_PATIENT_OTP_TTL_MINUTES || 10);
+const DOCTOR_PATIENT_OTP_MAX_ATTEMPTS = Number(process.env.DOCTOR_PATIENT_OTP_MAX_ATTEMPTS || 5);
+
+function getOtpTtlMinutes() {
+  return DOCTOR_PATIENT_OTP_TTL_MINUTES > 0 ? DOCTOR_PATIENT_OTP_TTL_MINUTES : 10;
+}
 
 const SUPERADMIN_EMAIL =
   (process.env.SUPERADMIN_EMAIL || "superadmin@medical-ai.local").toLowerCase();
@@ -432,6 +439,58 @@ function tokenExpiryDate() {
   return new Date(Date.now() + EMAIL_TOKEN_TTL_MINUTES * 60 * 1000);
 }
 
+function normalizeAssistantPersona(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+  return ASSISTANT_PERSONAS.includes(normalized) ? normalized : "DOCTOR";
+}
+
+function assistantPersonaToStyle(persona) {
+  const key = normalizeAssistantPersona(persona);
+  if (key === "NURSE") {
+    return "Ton d'infirmier: rassurant, orienté actions concrètes, patient et attentif.";
+  }
+  if (key === "OWL") {
+    return "Ton hibou (OWL): pédagogique, encourage l'observation, explique simplement sans dramatiser.";
+  }
+  if (key === "RESCUE_DOG") {
+    return "Ton chien de secours: protecteur, motivant, clair sur les gestes à faire en cas d'alerte.";
+  }
+  return "Ton docteur: empathique, prudent, et orienté vers les prochaines étapes.";
+}
+
+function isValidOtpCode(code) {
+  const s = String(code || "").trim();
+  return /^\d{4,6}$/.test(s);
+}
+
+function issueOtpCode() {
+  // Always return 6 digits (easy to type).
+  return String(crypto.randomInt(100000, 1000000));
+}
+
+function otpExpiryDate() {
+  return new Date(Date.now() + getOtpTtlMinutes() * 60 * 1000);
+}
+
+function normalizeIncomingImageInputs(images) {
+  if (!Array.isArray(images)) return [];
+  return images
+    .map((v) => String(v || "").trim())
+    .filter(Boolean)
+    .filter((v) => v.startsWith("data:image/") || /^https?:\/\//i.test(v))
+    .slice(0, 3);
+}
+
+function withVisionUserMessage({ baseMessages, userText, imageInputs }) {
+  const images = normalizeIncomingImageInputs(imageInputs);
+  if (!images.length) return baseMessages;
+  const userContent = [
+    { type: "text", text: String(userText || "") },
+    ...images.map((url) => ({ type: "image_url", image_url: { url } })),
+  ];
+  return [...baseMessages, { role: "user", content: userContent }];
+}
+
 async function sendEmail({ to, subject, text, html }) {
   if (!mailTransporter) {
     throw new Error(
@@ -568,10 +627,29 @@ async function ensurePatientExists(patientId) {
   return patient;
 }
 
-function composePatientAssistantReply({ message, triage, specialist, doctors }) {
+async function ensureDoctorHasActiveLink({ doctorUserId, patientId }) {
+  const doctorId = Number(doctorUserId);
+  const pId = Number(patientId);
+  if (!Number.isInteger(doctorId) || !Number.isInteger(pId) || pId <= 0) return false;
+  const link = await prisma.doctorPatientLink.findFirst({
+    where: { doctorUserId: doctorId, patientId: pId, status: "ACTIVE" },
+  });
+  return Boolean(link);
+}
+
+async function getPatientForEmail(patientId) {
+  const pId = Number(patientId);
+  if (!Number.isInteger(pId) || pId <= 0) return null;
+  return prisma.patient.findUnique({
+    where: { id: pId },
+    select: { id: true, user: { select: { email: true, fullName: true } }, fullName: true },
+  });
+}
+
+function composePatientAssistantReply({ message, triage, specialist, doctors, patientPersona }) {
   if (isGreetingOnly(message)) {
     return [
-      "Bonjour, je suis la pour vous aider.",
+      "Bonjour, je suis la pour vous aider (en douceur et avec prudence).",
       "Decrivez-moi ce que vous ressentez depuis quand, et ce qui aggrave ou soulage la douleur.",
       "Exemple: type de douleur, localisation, fievre, vomissements, saignement, grossesse, traitement deja pris.",
     ].join("\n\n");
@@ -595,9 +673,13 @@ function composePatientAssistantReply({ message, triage, specialist, doctors }) 
       : "Le niveau de preoccupation est faible pour le moment, avec surveillance.";
 
   const explainedSummary = `${triage.summary}. En mots simples: cela signifie qu'il peut y avoir un probleme de sante a surveiller selon vos symptomes.`;
+  const personaLine = patientPersona
+    ? `Votre assistant (${normalizeAssistantPersona(patientPersona).replace(/_/g, " ").toLowerCase()}) vous guide pas a pas.`
+    : "";
 
   return [
     `Je comprends, merci pour votre message. ${severityText}`,
+    personaLine,
     `Ce que j'ai compris: ${explainedSummary}`,
     `Ce que je vous conseille maintenant: ${triage.guidance} ${triage.nextStep}`,
     `Medecin a consulter en priorite: ${specialist}.`,
@@ -929,6 +1011,7 @@ async function generatePatientAssistantText({
   doctors,
   historyMessages,
   patientContext,
+  imageInputs,
 }) {
   if (isGreetingOnly(message)) {
     return [
@@ -950,13 +1033,24 @@ async function generatePatientAssistantText({
 
   const safePatientContext =
     patientContext && typeof patientContext === "object"
-      ? `Contexte patient (si connu): age=${patientContext.age ?? "N/A"}, sexe=${patientContext.sex ?? "N/A"}, ville=${patientContext.city ?? "N/A"}`
-      : "Contexte patient: non disponible.";
+      ? [
+          `Contexte patient (si connu): age=${patientContext.age ?? "N/A"}, sexe=${patientContext.sex ?? "N/A"}, ville=${patientContext.city ?? "N/A"}`,
+          patientContext.medicalMemory
+            ? `Memoire medicale persistante (contexte):\n${String(patientContext.medicalMemory).slice(0, 5500)}`
+            : "Memoire medicale persistante: (vide)",
+          `Persona assistant patient: ${normalizeAssistantPersona(patientContext.assistantPersona || "DOCTOR")}`,
+        ].join("\n")
+      : [
+          "Contexte patient: non disponible.",
+          "Memoire medicale persistante: (vide)",
+          "Persona assistant patient: DOCTOR",
+        ].join("\n");
 
   const systemPrompt =
     "Tu es l'Agent IA Patient d'une plateforme medicale. Objectif: conversation naturelle, empathique et utile, tout en restant prudent. " +
     "Tu ne poses pas de diagnostic. Tu expliques en mots simples. Tu poses 1 a 3 questions courtes si des infos manquent. " +
-    "Si le triage est RED, tu recommandes explicitement d'aller aux urgences immediatement.";
+    "Si le triage est RED, tu recommandes explicitement d'aller aux urgences immediatement. " +
+    `Style: ${assistantPersonaToStyle(patientContext?.assistantPersona || "DOCTOR")}`;
 
   const triageContext = [
     safePatientContext,
@@ -969,7 +1063,13 @@ async function generatePatientAssistantText({
     "Consignes de style: reponse courte au debut (2-4 phrases), puis details si utile. Evite les listes trop rigides.",
   ].join("\n");
 
-  const messages = buildPatientAgentMessages({ systemPrompt, historyMessages, triageContext });
+  const baseMessages = buildPatientAgentMessages({ systemPrompt, historyMessages, triageContext });
+  const messages = withVisionUserMessage({
+    baseMessages,
+    userText:
+      "Le patient vient d'envoyer des images. Analyse-les avec prudence, sans diagnostic certain, puis reponds.",
+    imageInputs,
+  });
   return callLLM({ messages, temperature: 0.25, maxTokens: 520 });
 }
 
@@ -989,7 +1089,7 @@ function buildDoctorAgentMessages({ systemPrompt, historyMessages, clinicalConte
   ];
 }
 
-async function generateDoctorAssistantText({ message, triage, hypotheses, historyMessages }) {
+async function generateDoctorAssistantText({ message, triage, hypotheses, historyMessages, imageInputs }) {
   const systemPrompt =
     "Tu es l'Agent IA Medecin (assistant clinique). Conversation naturelle, concise, actionnable. " +
     "Pas de certitude diagnostique. Mets en avant les red flags et les infos manquantes. " +
@@ -1002,8 +1102,48 @@ async function generateDoctorAssistantText({ message, triage, hypotheses, histor
     "Format prefere (court): Synthese / Hypotheses / A verifier / Message patient (simple).",
   ].join("\n");
 
-  const messages = buildDoctorAgentMessages({ systemPrompt, historyMessages, clinicalContext });
+  const baseMessages = buildDoctorAgentMessages({ systemPrompt, historyMessages, clinicalContext });
+  const messages = withVisionUserMessage({
+    baseMessages,
+    userText:
+      "Des images cliniques ont ete jointes au message. Prends-les en compte avec prudence.",
+    imageInputs,
+  });
   return callLLM({ messages, temperature: 0.2, maxTokens: 650 });
+}
+
+async function generatePatientReportFromDoctor({
+  patient,
+  doctorDraftText,
+  triageLevel,
+  triageSummary,
+  guidance,
+  nextStep,
+  specialist,
+}) {
+  const persona = patient?.assistantPersona || "DOCTOR";
+  const patientStyle = assistantPersonaToStyle(persona);
+
+  const systemPrompt =
+    "Tu es l'IA Patient. Tu transformes un rapport clinique provisoire en explication patient-friendly, prudente, non diagnostique. " +
+    "Tu dois garder un ton rassurant et orienter vers des actions concretes. " +
+    "Contraintes: pas de diagnostic certain, pas de speculation dangereuse. " +
+    "Structure REQUISE: (1) Resume en mots simples (2) Signaux a surveiller (3) Que faire maintenant (4) Prochain contact (si applicable). " +
+    `Style: ${patientStyle}`;
+
+  const userPrompt = [
+    `Patient: nom=${patient?.fullName || "N/A"}, age=${patient?.age ?? "N/A"}, sexe=${patient?.sex ?? "N/A"}, ville=${patient?.city ?? "N/A"}`,
+    `Memoire medicale persistante (contexte interne):\n${patient?.medicalMemory || "(vide)"}`,
+    `Triage: niveau=${triageLevel || "N/A"} | resume=${triageSummary || "N/A"}`,
+    `Guidance securite: ${guidance || ""}`,
+    `Next step: ${nextStep || ""}`,
+    `Specialiste probable: ${specialist || ""}`,
+    `Texte clinique du medecin (draft):\n${doctorDraftText || ""}`,
+    "Redige une version finale pour le patient. La memoire medicale est un contexte, ne la recopie pas mot pour mot.",
+  ].join("\n\n");
+
+  // Best effort: cap tokens because patient text should be short and readable.
+  return callLLM({ systemPrompt, userPrompt: userPrompt, temperature: 0.25, maxTokens: 520 });
 }
 
 app.get("/", (_req, res) => {
@@ -1066,6 +1206,7 @@ app.post("/auth/signup/patient", authLimiter, async (req, res) => {
       age: z.number().int().min(0).max(120).optional(),
       sex: z.string().trim().optional(),
       city: z.string().trim().optional(),
+      assistantPersona: z.enum(ASSISTANT_PERSONAS).optional(),
     });
 
     const parsed = schema.safeParse(req.body || {});
@@ -1073,7 +1214,7 @@ app.post("/auth/signup/patient", authLimiter, async (req, res) => {
       return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
     }
 
-    const { fullName, email, password, age, sex, city } = parsed.data;
+    const { fullName, email, password, age, sex, city, assistantPersona } = parsed.data;
 
     if (!fullName || !email || !password) {
       return res.status(400).json({
@@ -1105,6 +1246,7 @@ app.post("/auth/signup/patient", authLimiter, async (req, res) => {
         age: Number.isInteger(age) ? age : null,
         sex: typeof sex === "string" && sex.trim() ? sex.trim() : null,
         city: typeof city === "string" && city.trim() ? city.trim() : null,
+        assistantPersona: normalizeAssistantPersona(assistantPersona),
       },
     });
 
@@ -1128,6 +1270,7 @@ app.post("/auth/signup/patient", authLimiter, async (req, res) => {
         role: user.role,
         status: user.status,
         patientId: patient.id,
+        assistantPersona: patient.assistantPersona,
       },
       conversationId: conversation.id,
     });
@@ -1262,6 +1405,7 @@ app.post("/auth/login", authLimiter, async (req, res) => {
         role: user.role,
         status: user.status,
         patientId: user.patientProfile?.id || null,
+        assistantPersona: user.patientProfile?.assistantPersona || "DOCTOR",
       },
     });
   } catch (error) {
@@ -1566,6 +1710,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
       message: z.string().trim().min(1).max(6000),
       location: z.string().trim().max(200).optional(),
       patientId: z.union([z.number().int().positive(), z.string().trim()]).optional(),
+      images: z.array(z.string().trim().min(1)).max(3).optional(),
     });
 
     const parsed = schema.safeParse(req.body || {});
@@ -1579,6 +1724,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
         ? parsed.data.location.trim()
         : null;
     const patientIdRaw = parsed.data.patientId;
+    const imageInputs = normalizeIncomingImageInputs(parsed.data.images);
     const patientId =
       patientIdRaw !== undefined && String(patientIdRaw).trim()
         ? Number(String(patientIdRaw).trim())
@@ -1651,6 +1797,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
               sex: patientProfile.sex,
               city: patientProfile.city,
               medicalMemory: patientProfile.medicalMemory,
+              assistantPersona: patientProfile.assistantPersona,
             }
           : null;
 
@@ -1690,6 +1837,9 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
                   patientContext.medicalMemory
                     ? `Memoire medicale persistante:\n${patientContext.medicalMemory}`
                     : "Memoire medicale persistante: (vide)",
+                  `Persona assistant patient: ${normalizeAssistantPersona(
+                    patientContext.assistantPersona || "DOCTOR"
+                  )}`,
                 ].join("\n")
               : "Contexte patient: non disponible.";
 
@@ -1706,6 +1856,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
             `Prochaine etape: ${triage.nextStep}`,
             `Specialiste recommande: ${specialist}`,
             `Praticiens trouves:\n${doctorsText}`,
+            `Style: ${assistantPersonaToStyle(patientContext?.assistantPersona || "DOCTOR")}`,
             "Consignes de style: reponse courte au debut (2-4 phrases), puis details si utile. Evite les listes trop rigides.",
           ].join("\n");
 
@@ -1714,9 +1865,15 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
             historyMessages,
             triageContext,
           });
+          const llmMessagesWithImages = withVisionUserMessage({
+            baseMessages: llmMessages,
+            userText:
+              "Le patient a ajoute des images a ce message. Prends-les en compte avec prudence.",
+            imageInputs,
+          });
 
           assistantText = await callLLMStream({
-            messages: llmMessages,
+            messages: llmMessagesWithImages,
             temperature: 0.25,
             maxTokens: 520,
             onDelta: (delta) => {
@@ -1734,6 +1891,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
             doctors,
             historyMessages,
             patientContext,
+            imageInputs,
           });
         }
       } catch (error) {
@@ -1746,6 +1904,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
           triage,
           specialist,
           doctors,
+          patientPersona: patientContext?.assistantPersona,
         });
         assistantText += `\n\n[Info technique] ${reason} Reponse de secours activee.`;
 
@@ -1790,17 +1949,43 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
         }).catch(() => {});
       }
     } else {
-      const triage = detectTriage(message).triage;
-      triageLevel = triage;
+      const linkedPatientId =
+        Number.isInteger(Number(patientId)) && Number(patientId) > 0 ? Number(patientId) : null;
+
+      if (!linkedPatientId) {
+        return res.status(400).json({ error: "patientId requis pour l'analyse medecin (OTP obligatoire)." });
+      }
+
+      const patientExists = await ensurePatientExists(linkedPatientId);
+      if (!patientExists) {
+        return res.status(404).json({ error: "Patient introuvable." });
+      }
+
+      const hasLink = await ensureDoctorHasActiveLink({
+        doctorUserId: req.session.id,
+        patientId: linkedPatientId,
+      });
+      if (!hasLink) {
+        return res.status(403).json({
+          error: "Patient non autorise pour ce medecin. Realisez l'association via OTP.",
+        });
+      }
+
+      const triageResult = detectTriage(message);
+      triageLevel = triageResult.triage;
+      const triageSummary = triageResult.summary;
+      const guidance = triageResult.guidance;
+      const nextStep = triageResult.nextStep;
+      const specialist = recommendSpecialist(message);
 
       const clinicalSummary = `Analyse clinique du message: ${message}`;
       const hypotheses =
-        triage === "RED"
+        triageLevel === "RED"
           ? [
               "Cas potentiellement critique a evaluer immediatement",
               "Verifier constantes vitales et protocoles d'urgence",
             ]
-          : triage === "ORANGE"
+          : triageLevel === "ORANGE"
           ? [
               "Consultation et examen clinique recommandes",
               "Approfondir bilan etiologique",
@@ -1838,7 +2023,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
             "Termine par 2-4 questions de clarification si necessaire.";
 
           const clinicalContext = [
-            `Niveau de vigilance calcule: ${triage}`,
+            `Niveau de vigilance calcule: ${triageLevel}`,
             `Hypotheses preliminaires (regles): ${hypotheses.join(" | ")}`,
             `Dernier message: ${message}`,
             "Format prefere (court): Synthese / Hypotheses / A verifier / Message patient (simple).",
@@ -1849,9 +2034,15 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
             historyMessages,
             clinicalContext,
           });
+          const llmMessagesWithImages = withVisionUserMessage({
+            baseMessages: llmMessages,
+            userText:
+              "Des images ont ete ajoutees au message medecin. Prends-les en compte pour le contexte.",
+            imageInputs,
+          });
 
           assistantText = await callLLMStream({
-            messages: llmMessages,
+            messages: llmMessagesWithImages,
             temperature: 0.2,
             maxTokens: 650,
             onDelta: (delta) => {
@@ -1864,9 +2055,10 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
         } else {
           assistantText = await generateDoctorAssistantText({
             message,
-            triage,
+            triage: triageLevel,
             hypotheses,
             historyMessages,
+            imageInputs,
           });
         }
       } catch (error) {
@@ -1875,7 +2067,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
           ? "Quota/limite OpenRouter atteinte (HTTP 429)."
           : "Service IA externe indisponible.";
         assistantText = composeDoctorAssistantReply({
-          triage,
+          triage: triageLevel,
           clinicalSummary,
           hypotheses,
         });
@@ -1888,12 +2080,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
         }
       }
 
-      const linkedPatientId =
-        Number.isInteger(Number(patientId)) && Number(patientId) > 0 ? Number(patientId) : null;
-
-      if (linkedPatientId) {
-        await ensurePatientExists(linkedPatientId);
-      }
+      // linkedPatientId + active OTP link already validated earlier.
 
       await prisma.doctorAnalysis.create({
         data: {
@@ -1902,7 +2089,7 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
           patientProfile: linkedPatientId
             ? `Patient #${linkedPatientId}`
             : "Patient non specifie",
-          triageLevel: triage,
+          triageLevel: triageLevel,
           symptoms: message,
           medicalData: null,
           clinicalSummary,
@@ -1920,6 +2107,21 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
           triageLevel,
         }).catch(() => {});
       }
+
+      // Create a patient report draft that the doctor must approve before it becomes visible.
+      await prisma.patientReport.create({
+        data: {
+          patientId: linkedPatientId,
+          doctorUserId: req.session.id,
+          status: "DRAFT",
+          triageLevel,
+          triageSummary,
+          guidance,
+          nextStep,
+          specialist,
+          doctorDraftText: assistantText,
+        },
+      });
     }
 
     const assistantMessage = await prisma.chatMessage.create({
@@ -2000,16 +2202,322 @@ app.get("/patients/:id/history", authRequired, async (req, res) => {
       return res.status(403).json({ error: "Acces refuse." });
     }
 
-    // Patient can view history, but NOT the persistent medical memory field.
+    // Patient must not see the longitudinal medical report (even if they are the owner).
+    // They can consult their conversation history normally via chat endpoints.
     if (isOwner && req.session.role === "PATIENT") {
-      // eslint-disable-next-line no-unused-vars
-      const { medicalMemory, medicalMemoryUpdatedAt, ...safe } = patient;
-      return res.json(safe);
+      return res.status(403).json({
+        error: "Historique medical longitudinal indisponible cote patient.",
+      });
     }
 
     return res.json(patient);
   } catch (error) {
     return res.status(500).json({ error: "Erreur lecture historique", details: error.message });
+  }
+});
+
+// Doctor <-> Patient pairing (OTP)
+app.post("/doctor/patient-link/request-otp", authLimiter, authRequired, requireRole("DOCTOR"), async (req, res) => {
+  try {
+    const schema = z.object({
+      patientId: z.union([z.number().int().positive(), z.string().trim().min(1)]),
+    });
+    const parsed = schema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
+    }
+
+    const patientId = Number(parsed.data.patientId);
+    if (!Number.isInteger(patientId) || patientId <= 0) {
+      return res.status(400).json({ error: "patientId invalide." });
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      include: { user: true },
+    });
+    if (!patient || !patient.user) {
+      return res.status(404).json({ error: "Patient introuvable (ou email manquant)." });
+    }
+
+    // Reset pending OTPs for this doctor/patient.
+    await prisma.pairingOtp.deleteMany({
+      where: {
+        doctorUserId: req.session.id,
+        patientId,
+      },
+    });
+
+    await prisma.doctorPatientLink.deleteMany({
+      where: { doctorUserId: req.session.id, patientId },
+    });
+
+    const rawOtp = issueOtpCode();
+    const otpHash = sha256(rawOtp);
+
+    await prisma.pairingOtp.create({
+      data: {
+        doctorUserId: req.session.id,
+        patientId,
+        otpHash,
+        expiresAt: otpExpiryDate(),
+        attempts: 0,
+      },
+    });
+
+    await prisma.doctorPatientLink.create({
+      data: {
+        doctorUserId: req.session.id,
+        patientId,
+        status: "PENDING",
+      },
+    });
+
+    const to = patient.user.email;
+    const subject = "Code OTP - Association medecin/patient (Medical AI)";
+    const text = `Bonjour ${patient.user.fullName || ""},\n\nVotre code OTP pour associer votre patient a un medecin est: ${rawOtp}\n\nCe code expire dans ${getOtpTtlMinutes()} minutes.`;
+
+    // Best effort: if SMTP not configured, we still return success.
+    try {
+      await sendEmail({ to, subject, text });
+    } catch (_e) {
+      // ignore to keep OTP flow usable in mock/dev
+    }
+
+    return res.json({ message: "OTP envoye (best effort).", expiresInMinutes: getOtpTtlMinutes() });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur request-otp", details: error.message });
+  }
+});
+
+app.post("/doctor/patient-link/confirm-otp", authLimiter, authRequired, requireRole("DOCTOR"), async (req, res) => {
+  try {
+    const schema = z.object({
+      patientId: z.union([z.number().int().positive(), z.string().trim().min(1)]),
+      otp: z.string().trim(),
+    });
+    const parsed = schema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
+    }
+
+    const patientId = Number(parsed.data.patientId);
+    const otp = parsed.data.otp;
+
+    if (!Number.isInteger(patientId) || patientId <= 0) {
+      return res.status(400).json({ error: "patientId invalide." });
+    }
+    if (!isValidOtpCode(otp)) {
+      return res.status(400).json({ error: "OTP invalide. Format attendu: 4 a 6 chiffres." });
+    }
+
+    const now = new Date();
+    const record = await prisma.pairingOtp.findFirst({
+      where: {
+        doctorUserId: req.session.id,
+        patientId,
+        consumedAt: null,
+        expiresAt: { gt: now },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!record) {
+      return res.status(403).json({ error: "OTP invalide ou expire." });
+    }
+
+    const currentAttempts = Number(record.attempts || 0);
+    if (currentAttempts >= DOCTOR_PATIENT_OTP_MAX_ATTEMPTS) {
+      await prisma.doctorPatientLink.updateMany({
+        where: { doctorUserId: req.session.id, patientId },
+        data: { status: "EXPIRED" },
+      }).catch(() => {});
+      return res.status(403).json({ error: "Nombre de tentatives depasse." });
+    }
+
+    const otpHash = sha256(otp);
+    const otpMatches = record.otpHash === otpHash;
+    if (!otpMatches) {
+      await prisma.pairingOtp.update({
+        where: { id: record.id },
+        data: { attempts: currentAttempts + 1 },
+      }).catch(() => {});
+      return res.status(403).json({ error: "OTP incorrect." });
+    }
+
+    await prisma.pairingOtp.update({
+      where: { id: record.id },
+      data: { consumedAt: new Date(), attempts: currentAttempts + 1 },
+    });
+
+    await prisma.doctorPatientLink.updateMany({
+      where: { doctorUserId: req.session.id, patientId },
+      data: { status: "ACTIVE", updatedAt: new Date() },
+    });
+
+    return res.json({ message: "Association confirme. Rapport autorise.", status: "ACTIVE" });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur confirm-otp", details: error.message });
+  }
+});
+
+app.get("/doctor/patient-link/status", authRequired, requireRole("DOCTOR"), async (req, res) => {
+  try {
+    const patientId = Number(req.query.patientId);
+    if (!Number.isInteger(patientId) || patientId <= 0) {
+      return res.status(400).json({ error: "patientId invalide." });
+    }
+
+    const link = await prisma.doctorPatientLink.findFirst({
+      where: { doctorUserId: req.session.id, patientId },
+      orderBy: { updatedAt: "desc" },
+    });
+    return res.json({ status: link?.status || "NONE" });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur status-link", details: error.message });
+  }
+});
+
+// Patient can fetch latest approved report (post validation)
+app.get("/patient/reports/latest", authRequired, requireRole("PATIENT"), async (req, res) => {
+  try {
+    const patient = await prisma.patient.findUnique({
+      where: { userId: req.session.id },
+      select: { id: true },
+    });
+    if (!patient?.id) {
+      return res.status(404).json({ error: "Patient introuvable." });
+    }
+
+    const report = await prisma.patientReport.findFirst({
+      where: { patientId: patient.id, status: { in: ["APPROVED", "SENT"] } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        status: true,
+        triageLevel: true,
+        patientFinalText: true,
+        approvedAt: true,
+        sentAt: true,
+      },
+    });
+
+    return res.json({ report: report || null });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur patient/reports/latest", details: error.message });
+  }
+});
+
+// Doctor can fetch latest draft report for a given patient (for approval UI)
+app.get("/doctor/reports/latest", authRequired, requireRole("DOCTOR"), async (req, res) => {
+  try {
+    const patientId = Number(req.query.patientId);
+    if (!Number.isInteger(patientId) || patientId <= 0) {
+      return res.status(400).json({ error: "patientId invalide." });
+    }
+
+    const linkOk = await ensureDoctorHasActiveLink({
+      doctorUserId: req.session.id,
+      patientId,
+    });
+    if (!linkOk) {
+      return res.status(403).json({ error: "Patient non autorise (OTP obligatoire)." });
+    }
+
+    const report = await prisma.patientReport.findFirst({
+      where: { doctorUserId: req.session.id, patientId, status: "DRAFT" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.json({ report: report || null });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur doctor/reports/latest", details: error.message });
+  }
+});
+
+app.post("/doctor/reports/:reportId/approve", authLimiter, authRequired, requireRole("DOCTOR"), async (req, res) => {
+  try {
+    const reportId = Number(req.params.reportId);
+    if (!Number.isInteger(reportId) || reportId <= 0) {
+      return res.status(400).json({ error: "reportId invalide." });
+    }
+
+    const schema = z.object({
+      // Optional: allow editing doctor draft text before generating patient final report.
+      editedDoctorDraftText: z.string().trim().optional(),
+    });
+    const parsed = schema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
+    }
+
+    const draft = await prisma.patientReport.findUnique({
+      where: { id: reportId },
+    });
+    if (!draft) {
+      return res.status(404).json({ error: "Rapport introuvable." });
+    }
+    if (draft.doctorUserId !== req.session.id) {
+      return res.status(403).json({ error: "Acces refuse." });
+    }
+    if (draft.status !== "DRAFT") {
+      return res.status(400).json({ error: "Rapport pas en mode draft." });
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: draft.patientId },
+      include: { user: true },
+    });
+    if (!patient || !patient.user) {
+      return res.status(404).json({ error: "Patient introuvable (ou email manquant)." });
+    }
+
+    const doctorDraftText = parsed.data.editedDoctorDraftText || draft.doctorDraftText;
+
+    const patientFinalText = await generatePatientReportFromDoctor({
+      patient,
+      doctorDraftText,
+      triageLevel: draft.triageLevel,
+      triageSummary: draft.triageSummary,
+      guidance: draft.guidance,
+      nextStep: draft.nextStep,
+      specialist: draft.specialist,
+    }).catch((e) => {
+      // Fallback: keep concise message if LLM fails.
+      return `Votre medecin a valide un rapport. Niveau de vigilance: ${draft.triageLevel || "N/A"}. ${draft.nextStep ? `Prochaines etapes: ${draft.nextStep}` : ""}`;
+    });
+
+    const approvedAt = new Date();
+    let status = "APPROVED";
+    let sentAt = null;
+
+    // Best effort email sending.
+    try {
+      await sendEmail({
+        to: patient.user.email,
+        subject: "Votre rapport patient - Medical AI",
+        text: `Bonjour ${patient.user.fullName || patient.fullName},\n\nVoici le rapport validé par votre médecin.\n\n${patientFinalText}\n`,
+      });
+      status = "SENT";
+      sentAt = new Date();
+    } catch (_e) {
+      // ignore: allow app to work even without SMTP
+    }
+
+    await prisma.patientReport.update({
+      where: { id: reportId },
+      data: {
+        doctorDraftText,
+        patientFinalText,
+        approvedAt,
+        sentAt,
+        status,
+      },
+    });
+
+    return res.json({ message: "Rapport approuve.", status });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur approve-report", details: error.message });
   }
 });
 
