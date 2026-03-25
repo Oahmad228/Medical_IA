@@ -7,14 +7,117 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  PATIENT
+  DOCTOR
+  SUPERADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  PENDING
+  REJECTED
+}
+
+enum ConversationRole {
+  PATIENT
+  DOCTOR
+}
+
+enum MessageAuthor {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model User {
+  id             Int            @id @default(autoincrement())
+  email          String         @unique
+  emailVerified  Boolean        @default(false)
+  passwordHash   String
+  fullName       String
+  role           UserRole
+  status         AccountStatus  @default(ACTIVE)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  patientProfile Patient?       @relation("PatientOwner")
+  doctorProfile  DoctorProfile? @relation("DoctorOwner")
+  reviewedDoctors DoctorProfile[] @relation("DoctorReviewer")
+  conversations  Conversation[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model EmailVerificationToken {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
 model Patient {
   id              Int              @id @default(autoincrement())
+  userId          Int?             @unique
+  user            User?            @relation("PatientOwner", fields: [userId], references: [id])
   fullName        String
   age             Int?
   sex             String?
+  city            String?
+  medicalMemory   String?
+  medicalMemoryUpdatedAt DateTime?
   createdAt       DateTime         @default(now())
   symptomReports  SymptomReport[]
   doctorAnalyses  DoctorAnalysis[]
+}
+
+model DoctorProfile {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  user            User      @relation("DoctorOwner", fields: [userId], references: [id])
+  specialty       String
+  licenseNumber   String    @unique
+  yearsExperience Int?
+  bio             String?
+  reviewedById    Int?
+  reviewedBy      User?     @relation("DoctorReviewer", fields: [reviewedById], references: [id])
+  approvalNote    String?
+  approvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+}
+
+model Conversation {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id])
+  role      ConversationRole
+  title     String
+  summary   String?
+  summaryUpdatedAt DateTime?
+  summaryMessageCount Int @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id             Int           @id @default(autoincrement())
+  conversationId Int
+  conversation   Conversation  @relation(fields: [conversationId], references: [id])
+  author         MessageAuthor
+  content        String
+  triageLevel    String?
+  createdAt      DateTime      @default(now())
 }
 
 model SymptomReport {
@@ -38,6 +141,7 @@ model DoctorAnalysis {
   id                        Int      @id @default(autoincrement())
   patient                   Patient? @relation(fields: [patientId], references: [id])
   patientId                 Int?
+  doctorUserId              Int?
   patientProfile            String
   triageLevel               String
   symptoms                  String

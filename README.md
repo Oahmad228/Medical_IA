@@ -1,212 +1,297 @@
-# Medical AI - Double Agent System
+# Medical AI – Dual Agent System
 
-## 1. But du projet
+## 1. Introduction
 
-Le projet **Medical AI** vise a creer un systeme d'assistance medicale intelligent qui aide a la fois :
+Ce projet vise à développer un **système d'assistance médicale basé sur l'intelligence artificielle** capable d'aider les patients à comprendre leurs symptômes et d'assister les médecins dans l'analyse d'informations cliniques.
 
-- les patients a mieux decrire leurs symptomes et a comprendre leur situation,
-- les medecins a analyser rapidement les informations utiles.
+L'objectif principal est de créer un système composé de **deux agents IA spécialisés** :
 
-L'objectif n'est pas de remplacer un professionnel de sante, mais de **faciliter l'acces aux soins**, **ameliorer l'orientation** et **renforcer la communication medecin-patient**.
+- **Agent Patient** : interagit avec les patients, analyse les symptômes, pose des questions et oriente.
+- **Agent Médecin** : assiste le médecin (synthèse, hypothèses prudentes, points de vigilance, vulgarisation).
 
-## 2. Fonctionnement general
+Ce projet est développé dans un **contexte académique** afin de démontrer l'utilisation de l'IA dans le domaine médical.
 
-Le systeme repose sur **deux agents IA interconnectes** et un backend orchestrateur :
+⚠️ Ce système **ne remplace pas un médecin**. Il s'agit uniquement d'un outil d'assistance.
 
-1. **Agent Patient** : dialogue avec l'utilisateur, collecte les symptomes, pose des questions complementaires et evalue le niveau d'urgence.
-2. **Agent Medecin** : aide le praticien a resumer les donnees, proposer des hypotheses et reformuler les explications en langage simple.
-3. **Backend Orchestrateur** : coordonne les appels IA, gere les donnees, et integre les APIs externes (ex. Google Maps).
+---
 
-Flux global :
+## 2. Objectif du projet
 
-1. Le patient decrit ses symptomes.
-2. L'agent Patient analyse et classe le niveau d'urgence (GREEN, ORANGE, RED).
-3. Le systeme propose des conseils et, si necessaire, oriente vers un specialiste.
-4. Le systeme peut suggerer des medecins proches via Google Places API.
-5. Cote medecin, l'agent Medecin assiste l'analyse du dossier et la vulgarisation des resultats.
+Le projet vise à créer une application capable de :
 
-## 3. Fonctionnalites principales
+- analyser les symptômes décrits par un patient
+- déterminer le niveau d'urgence (triage)
+- proposer des conseils simples et prudents
+- orienter vers un spécialiste si nécessaire
+- localiser des médecins proches du patient (optionnel)
+- assister les médecins dans l'analyse des informations médicales
+- vulgariser les informations médicales pour les patients
 
-### 3.1 Analyse des symptomes
+---
 
-- Saisie libre des symptomes en texte naturel.
-- Questions complementaires automatiques.
-- Evaluation preliminaire du risque.
+## 3. Architecture générale du système
 
-### 3.2 Triage medical
+Le système repose sur trois composants principaux.
 
-- **GREEN** : faible gravite, surveillance et conseils simples.
-- **ORANGE** : consultation recommandee a court terme.
-- **RED** : urgence, orientation immediate vers une prise en charge adaptee.
+### 1️⃣ Agent IA Patient
 
-### 3.3 Orientation vers specialistes
+Cet agent interagit directement avec le patient.
 
-- Suggestion du type de medecin selon les symptomes : generaliste, cardiologue, ORL, dermatologue, etc.
+Fonctions principales :
 
-### 3.4 Recherche de medecins proches
+- compréhension des symptômes
+- questions complémentaires
+- triage médical (GREEN / ORANGE / RED)
+- conseils simples
+- orientation vers un spécialiste
+- recherche de médecins proches (si Google Places configuré)
 
-- Integration Google Places API pour recuperer :
-	- nom,
-	- adresse,
-	- telephone,
-	- note.
+Exemple :
 
-### 3.5 Assistance clinique pour le medecin
+Patient :
 
-- Resume des symptomes et de l'historique.
-- Aide a la formulation d'hypotheses.
-- Generation d'une explication claire pour le patient.
+> "J'ai mal à la tête depuis 3 jours."
 
-### 3.6 Vulgarisation medicale
+L'agent va :
 
-- Traduction d'un langage medical complexe vers une formulation simple et comprensible.
+- analyser la description
+- poser des questions complémentaires
+- déterminer le niveau d'urgence
+- proposer des recommandations
 
-## 4. Architecture technique
+---
 
-Structure du projet :
+### 2️⃣ Agent IA Médecin
+
+Cet agent est destiné aux médecins.
+
+Fonctions principales :
+
+- analyser les informations fournies
+- produire une synthèse concise
+- proposer des hypothèses prudentes
+- suggérer ce qu’il faut vérifier en priorité
+- générer une explication simple pour le patient
+
+Le médecin garde **toujours la décision finale**.
+
+---
+
+### 3️⃣ Backend Orchestrateur
+
+Le backend agit comme le **coordinateur du système** :
+
+- gestion des sessions et des rôles (PATIENT / DOCTOR / SUPERADMIN)
+- stockage (Prisma + SQLite)
+- triage par règles
+- appels LLM (OpenRouter/Groq) pour des conversations naturelles
+- endpoints d'auth, d'admin, et de chat
+
+---
+
+## 4. Fonctionnalités principales
+
+### 4.1 Analyse des symptômes
+
+Le patient peut décrire ses symptômes en langage naturel.
+
+Exemple :
+
+```text
+J'ai une douleur au ventre depuis hier soir.
+```
+
+Le système va :
+
+1. analyser la description
+2. poser des questions supplémentaires si nécessaire
+3. déterminer le niveau d'urgence
+
+---
+
+### 4.2 Système de triage médical
+
+Les cas sont classés selon trois niveaux :
+
+- **🟢 GREEN (faible gravité)** : surveillance / conseils généraux
+- **🟠 ORANGE (consultation recommandée)** : consultation rapide
+- **🔴 RED (urgence)** : recommandation d’urgence immédiate
+
+---
+
+### 4.3 Orientation vers un spécialiste
+
+Si nécessaire, l'agent patient suggère un type de médecin :
+
+- médecin généraliste
+- dermatologue
+- cardiologue
+- ORL
+- neurologue
+
+---
+
+### 4.4 Localisation des médecins (optionnel)
+
+Le système peut utiliser **Google Maps / Google Places API** pour :
+
+- trouver des médecins proches
+- récupérer des informations (nom, adresse, note)
+
+---
+
+### 4.5 Assistance pour les médecins
+
+Le médecin peut :
+
+- consulter les échanges enregistrés
+- obtenir une synthèse et des points de vigilance
+- recevoir une explication “patient-friendly”
+
+---
+
+### 4.6 Vulgarisation médicale
+
+Le système transforme des termes médicaux en explications simples.
+
+Exemple :
+
+> "Inflammation des voies respiratoires supérieures."
+
+Devient :
+
+> "Il s'agit probablement d'une irritation ou d'une infection légère des voies respiratoires."
+
+---
+
+## 5. Technologies utilisées
+
+### Backend
+
+- Node.js
+- Express.js
+- Prisma
+- SQLite
+
+### Frontend
+
+- React (Vite)
+
+### IA
+
+- **Triage par règles** (déterministe, sécurité)
+- **LLM** (OpenRouter ou Groq) pour une conversation naturelle et contextuelle
+
+---
+
+## 6. Endpoints principaux (actuels)
+
+### Health
+
+- `GET /health`
+
+### Auth
+
+- `POST /auth/signup/patient`
+- `POST /auth/signup/doctor`
+- `POST /auth/login`
+- `POST /auth/logout`
+- `POST /auth/verify-email/request`
+- `POST /auth/verify-email/confirm`
+- `POST /auth/forgot-password`
+- `POST /auth/reset-password`
+
+### Chat
+
+- `GET /chat/conversations`
+- `POST /chat/conversations`
+- `GET /chat/conversations/:id/messages`
+- `POST /chat/conversations/:id/messages`
+
+### Admin (superadmin)
+
+- `GET /admin/doctor-requests?status=PENDING|ACTIVE|REJECTED`
+- `POST /admin/doctor-requests/:userId/approve`
+- `POST /admin/doctor-requests/:userId/reject`
+
+### Patients
+
+- `GET /patients/:id/history`
+
+---
+
+## 7. Structure du projet
 
 ```text
 Medical_IA/
-|- frontend/
-|- backend/
-|- docs/
-|- ai/
-`- eval/
+├─ backend/
+│  ├─ prisma/schema.prisma
+│  └─ server.js
+├─ frontend/
+│  └─ src/
+│     ├─ App.jsx
+│     └─ styles.css
+├─ ai/
+├─ docs/
+└─ eval/
 ```
 
-Composants techniques cibles :
+---
 
-- **Backend** : Node.js + Express.js
-	- Endpoints principaux : `/ai/patient`, `/ai/doctor`
-- **Base de donnees (evolution)** : Prisma + MySQL (ou SQLite en phase initiale)
-- **Frontend (evolution)** : React.js avec deux interfaces (patient et medecin)
-- **APIs externes** : Google Maps Platform (Places API)
-- **Moteur IA** :
-	- Regles deterministes pour triage et red flags,
-	- IA generative (etape future) pour conversation et synthese.
+## 8. Démarrage
 
-## 5. Comment on va l'implementer
+### Backend
 
-Le developpement est progressif, en 6 phases :
+Depuis `backend/` :
 
-1. **Structure initiale** du depot et des dossiers (`frontend`, `backend`, `docs`, `ai`, `eval`).
-2. **Backend minimal** avec Express et endpoints `/ai/patient`, `/ai/doctor`, en mode mock (`AI_MODE=mock`).
-3. **Triage base sur regles** pour detecter les red flags et classifier GREEN/ORANGE/RED.
-4. **Integration Google Places API** pour localiser des praticiens proches.
-5. **Persistance des donnees** avec Prisma + base SQL (patients, symptomes, consultations).
-6. **Interface React** :
-	 - Vue patient : saisie des symptomes, conseils, medecins proches.
-	 - Vue medecin : synthese du dossier, aide a l'explication.
-
-## 6. Limites du projet
-
-Ce projet est un **prototype academique**. Limites principales :
-
-1. **Non certifie medicalement** : le systeme ne remplace jamais un medecin.
-2. **IA simplifiee** : regles + modeles generaux, sans valeur de diagnostic clinique officiel.
-3. **Couverture medicale limitee** : conseils generalistes et prudents.
-4. **Securite et conformite partielles** : gestion des donnees simplifiee dans cette phase.
-
-## Conclusion
-
-Medical AI propose une approche modulaire d'assistance medicale basee sur deux agents IA specialises :
-
-- un agent oriente patient,
-- un agent oriente medecin.
-
-Le systeme peut evoluer vers une solution plus robuste avec base de connaissances enrichie, meilleure securite des donnees et integration clinique plus avancee.
-
-## Etat actuel fonctionnel
-
-Le backend `Medical_IA/backend` est maintenant fonctionnel avec :
-
-- `GET /health`
-- `POST /patients`
-- `GET /patients/:id/history`
-- `POST /ai/patient`
-- `POST /ai/doctor`
-
-Le triage, l'orientation specialiste, la recherche de medecins (mode mock par defaut) et la persistance en base SQLite sont actifs.
-
-## Lancer le projet (backend)
-
-1. Se placer dans `backend/`.
-2. Copier `backend/.env.example` vers `backend/.env`.
-3. Installer les dependances : `npm install`.
-4. Initialiser la base : `npm run prisma:generate` puis `npm run prisma:push`.
-5. Lancer : `npm start`.
-
-Le serveur demarre sur `http://localhost:3001` (ou `PORT` si defini).
-
-## Frontend React (Phase 6)
-
-Le frontend est maintenant une application **React + Vite** dans `frontend/` avec :
-
-- Gestion Patient (creation + historique)
-- Agent Patient (appel `POST /ai/patient`)
-- Agent Medecin (appel `POST /ai/doctor`)
-
-Pour l'utiliser :
-
-1. Lancer le backend (`npm start` dans `backend/`).
-2. Dans `frontend/` : `npm install`.
-3. Lancer en dev : `npm run dev`.
-4. Ouvrir l'URL affichee par Vite (defaut `http://localhost:5173`).
-
-Le frontend pointe vers `http://localhost:3001` par defaut.
-Vous pouvez changer l'API avec `frontend/.env` : `VITE_API_BASE_URL=...`.
-
-Le frontend inclut :
-
-- creation de patient,
-- consultation de l'historique patient,
-- appels Agent Patient et Agent Medecin avec `patientId` optionnel.
-
-## Variables d'environnement
-
-- `PORT` : port HTTP du backend (defaut `3001`).
-- `AI_MODE` : `mock` (defaut) ou `live`.
-- `GOOGLE_MAPS_API_KEY` : cle Google Places API (utile en mode `live`).
-- `DATABASE_URL` : URL SQLite Prisma (defaut `"file:./dev.db"`).
-
-## Exemples d'appels API
-
-### `POST /ai/patient`
-
-```json
-{
-	"message": "J'ai une douleur thoracique et je suis essouffle",
-	"location": "Casablanca"
-}
+```bash
+npm install
+npm run prisma:generate
+npm run prisma:push
+npm run dev
 ```
 
-Reponse : triage (`GREEN/ORANGE/RED`), specialiste recommande, et liste de medecins.
+Backend actif sur `http://localhost:3001`.
 
-### `POST /patients`
+### Frontend
 
-```json
-{
-	"fullName": "Sara El Amrani",
-	"age": 35,
-	"sex": "F"
-}
+Depuis `frontend/` :
+
+```bash
+npm install
+npm run dev
 ```
 
-Reponse : objet patient avec `id`.
+Frontend Vite par défaut sur `http://localhost:5173`.
 
-### `GET /patients/:id/history`
+---
 
-Reponse : patient + liste `symptomReports` + liste `doctorAnalyses`.
+## 9. Variables d'environnement (backend)
 
-### `POST /ai/doctor`
+Exemple minimal (OpenRouter) :
 
-```json
-{
-	"patientProfile": "Homme 52 ans",
-	"triage": "RED",
-	"symptoms": "douleur thoracique",
-	"medicalData": "TA 16/10"
-}
+```dotenv
+AI_MODE=live
+DATABASE_URL="file:./dev.db"
+LLM_PROVIDER=openrouter
+LLM_API_KEY=sk-or-v1-...
+LLM_MODEL=mistralai/mistral-small-3.1-24b-instruct:free
+APP_BASE_URL=http://localhost:5173
 ```
 
-Reponse : resume clinique, hypotheses et explication vulgarisee pour le patient.
+Optionnel :
+
+- `GOOGLE_MAPS_API_KEY` (pour la recherche de médecins)
+- `SMTP_*` (pour verification email + reset password)
+
+---
+
+## 10. Limites du projet
+
+Ce projet est un **prototype académique** :
+
+- non certifié médicalement
+- recommandations générales et prudentes
+- sécurité simplifiée (sessions en mémoire, prototype)
+- pas de diagnostic clinique
+
