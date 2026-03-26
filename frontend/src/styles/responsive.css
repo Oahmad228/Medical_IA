@@ -1,0 +1,45 @@
+@media (max-width: 1120px) {
+  .chat-shell--patient,
+  .chat-shell--doctor {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: auto;
+  }
+
+  .stage-aside {
+    min-height: 360px;
+    order: 3;
+  }
+
+  .panel {
+    min-height: auto;
+  }
+
+  .composer-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-extra {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-extra button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 940px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

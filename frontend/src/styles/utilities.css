@@ -1,0 +1,14 @@
+.error-text {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.info-text {
+  color: var(--brand-deep);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--muted);
+  line-height: 1.5;
+}

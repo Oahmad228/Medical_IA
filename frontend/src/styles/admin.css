@@ -1,0 +1,38 @@
+.admin-shell {
+  position: relative;
+  z-index: 2;
+  max-width: 1060px;
+  margin: 0 auto;
+}
+
+.requests-list {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.request-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.request-card p {
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.request-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.request-actions .ghost {
+  width: 100%;
+}

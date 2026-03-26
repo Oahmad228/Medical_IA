@@ -1,0 +1,123 @@
+:root {
+  --bg: #f4f6fb;
+  --bg-elevated: #ffffff;
+  --paper: #ffffff;
+  --ink: #0c1222;
+  --muted: #5c6578;
+  --line: rgba(15, 23, 42, 0.08);
+  --brand: #0d9488;
+  --brand-2: #6366f1;
+  --brand-deep: #0f766e;
+  --warn: #e11d48;
+  --amber: #f59e0b;
+  --ok: #10b981;
+  --shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.06);
+  --glass: rgba(255, 255, 255, 0.72);
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --focus: color-mix(in oklab, var(--brand), white 28%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(13, 148, 136, 0.18), transparent 55%),
+    radial-gradient(900px 500px at 95% 0%, rgba(99, 102, 241, 0.16), transparent 50%),
+    radial-gradient(800px 400px at 50% 110%, rgba(14, 165, 233, 0.08), transparent 45%),
+    var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: "Outfit", "Plus Jakarta Sans", system-ui, sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input,
+textarea,
+select,
+button {
+  width: 100%;
+  font: inherit;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+}
+
+input,
+textarea,
+select {
+  background: #fff;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(132deg, var(--brand), var(--brand-deep));
+}
+
+button:hover {
+  filter: brightness(0.97);
+}
+
+button:disabled {
+  opacity: 0.68;
+  cursor: not-allowed;
+}
+
+button.ghost {
+  width: auto;
+  border: 1px solid #9bcab7;
+  color: #0a684e;
+  background: transparent;
+}
+
+button.small {
+  width: auto;
+  font-size: 0.84rem;
+  padding: 7px 10px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--brand), white 32%);
+  outline-offset: 1px;
+}

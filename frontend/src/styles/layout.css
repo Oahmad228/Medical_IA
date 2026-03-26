@@ -1,0 +1,88 @@
+.page-shell {
+  position: relative;
+  min-height: 100vh;
+  padding: 22px;
+}
+
+.bg-blob {
+  position: fixed;
+  width: 290px;
+  height: 290px;
+  border-radius: 999px;
+  filter: blur(60px);
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-blob-a {
+  left: -70px;
+  top: -70px;
+  background: rgba(14, 165, 164, 0.55);
+}
+
+.bg-blob-b {
+  right: -70px;
+  bottom: -70px;
+  background: rgba(99, 102, 241, 0.4);
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.74rem;
+  color: color-mix(in oklab, var(--brand-deep), var(--ink) 10%);
+  font-weight: 800;
+}
+
+.topbar {
+  position: relative;
+  z-index: 2;
+  max-width: 1480px;
+  margin: 0 auto 18px;
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar h1 {
+  font-size: clamp(1.1rem, 2.5vw, 1.7rem);
+  margin-top: 4px;
+}
+
+.topbar-subtitle {
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.health-pill {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 6px 11px;
+  font-size: 0.84rem;
+  background: #fff;
+}
+
+.health-pill.ok {
+  color: var(--ok);
+  border-color: #95ddc0;
+}
+
+.health-pill.down {
+  color: var(--warn);
+  border-color: #efb9b2;
+}

@@ -152,6 +152,7 @@ model ChatMessage {
   conversation   Conversation  @relation(fields: [conversationId], references: [id])
   author         MessageAuthor
   content        String
+  imagesJson      String?
   triageLevel    String?
   createdAt      DateTime      @default(now())
 }

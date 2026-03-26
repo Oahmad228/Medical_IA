@@ -14,6 +14,7 @@ Ce projet est développé dans un **contexte académique** afin de démontrer l'
 ⚠️ Ce système **ne remplace pas un médecin**. Il s'agit uniquement d'un outil d'assistance.
 
 Document de cadrage fusionne (version longue): `docs/project_overview.md`
+Architecture technique (modules): `docs/architecture.md`
 
 ---
 
