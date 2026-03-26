@@ -57,9 +57,16 @@ const EMAIL_TOKEN_TTL_MINUTES = Number(process.env.EMAIL_TOKEN_TTL_MINUTES || 30
 const ASSISTANT_PERSONAS = ["DOCTOR", "NURSE", "OWL", "RESCUE_DOG"];
 const DOCTOR_PATIENT_OTP_TTL_MINUTES = Number(process.env.DOCTOR_PATIENT_OTP_TTL_MINUTES || 10);
 const DOCTOR_PATIENT_OTP_MAX_ATTEMPTS = Number(process.env.DOCTOR_PATIENT_OTP_MAX_ATTEMPTS || 5);
+// Step 1 requirement: once OTP is confirmed, the doctor-patient access stays valid for ~24h.
+const DOCTOR_PATIENT_LINK_TTL_HOURS = Number(process.env.DOCTOR_PATIENT_LINK_TTL_HOURS || 24);
 
 function getOtpTtlMinutes() {
   return DOCTOR_PATIENT_OTP_TTL_MINUTES > 0 ? DOCTOR_PATIENT_OTP_TTL_MINUTES : 10;
+}
+
+function getDoctorPatientActiveTtlExpiresAt() {
+  const hours = DOCTOR_PATIENT_LINK_TTL_HOURS > 0 ? DOCTOR_PATIENT_LINK_TTL_HOURS : 24;
+  return new Date(Date.now() + hours * 60 * 60 * 1000);
 }
 
 const SUPERADMIN_EMAIL =
@@ -631,8 +638,9 @@ async function ensureDoctorHasActiveLink({ doctorUserId, patientId }) {
   const doctorId = Number(doctorUserId);
   const pId = Number(patientId);
   if (!Number.isInteger(doctorId) || !Number.isInteger(pId) || pId <= 0) return false;
+  const now = new Date();
   const link = await prisma.doctorPatientLink.findFirst({
-    where: { doctorUserId: doctorId, patientId: pId, status: "ACTIVE" },
+    where: { doctorUserId: doctorId, patientId: pId, status: "ACTIVE", expiresAt: { gt: now } },
   });
   return Boolean(link);
 }
@@ -644,6 +652,25 @@ async function getPatientForEmail(patientId) {
     where: { id: pId },
     select: { id: true, user: { select: { email: true, fullName: true } }, fullName: true },
   });
+}
+
+async function getPatientForEmailString(patientEmail) {
+  const email = String(patientEmail || "").trim().toLowerCase();
+  if (!email) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      role: true,
+      patientProfile: { select: { id: true } },
+    },
+  });
+
+  if (!user || user.role !== "PATIENT" || !user.patientProfile?.id) return null;
+  return { patientId: user.patientProfile.id, patientUserId: user.id, fullName: user.fullName, email: user.email };
 }
 
 function composePatientAssistantReply({ message, triage, specialist, doctors, patientPersona }) {
@@ -677,15 +704,23 @@ function composePatientAssistantReply({ message, triage, specialist, doctors, pa
     ? `Votre assistant (${normalizeAssistantPersona(patientPersona).replace(/_/g, " ").toLowerCase()}) vous guide pas a pas.`
     : "";
 
+  const rendezVousLine =
+    triage.triage === "RED" || triage.triage === "ORANGE"
+      ? "Si vous le souhaitez, ajoutez votre localisation puis utilisez le bouton 'Rendez-vous' pour demarrer une consultation via l'app."
+      : null;
+
   return [
     `Je comprends, merci pour votre message. ${severityText}`,
     personaLine,
     `Ce que j'ai compris: ${explainedSummary}`,
     `Ce que je vous conseille maintenant: ${triage.guidance} ${triage.nextStep}`,
     `Medecin a consulter en priorite: ${specialist}.`,
+    rendezVousLine,
     `Options de praticiens: ${doctorsText}`,
     "Si vous voulez, je peux vous poser 3 questions courtes pour mieux preciser la situation.",
-  ].join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 function composeDoctorAssistantReply({ triage, clinicalSummary, hypotheses }) {
@@ -1050,6 +1085,7 @@ async function generatePatientAssistantText({
     "Tu es l'Agent IA Patient d'une plateforme medicale. Objectif: conversation naturelle, empathique et utile, tout en restant prudent. " +
     "Tu ne poses pas de diagnostic. Tu expliques en mots simples. Tu poses 1 a 3 questions courtes si des infos manquent. " +
     "Si le triage est RED, tu recommandes explicitement d'aller aux urgences immediatement. " +
+    "Si le triage est ORANGE ou RED, tu proposes explicitement la fonctionnalite 'Rendez-vous' dans l'app (le patient renseigne sa localisation puis demande une consultation). " +
     `Style: ${assistantPersonaToStyle(patientContext?.assistantPersona || "DOCTOR")}`;
 
   const triageContext = [
@@ -1089,7 +1125,17 @@ function buildDoctorAgentMessages({ systemPrompt, historyMessages, clinicalConte
   ];
 }
 
-async function generateDoctorAssistantText({ message, triage, hypotheses, historyMessages, imageInputs }) {
+async function generateDoctorAssistantText({
+  message,
+  triage,
+  hypotheses,
+  historyMessages,
+  imageInputs,
+  patientLocation,
+  patientTriageLevel,
+  patientTriageSummary,
+  patientSpecialist,
+}) {
   const systemPrompt =
     "Tu es l'Agent IA Medecin (assistant clinique). Conversation naturelle, concise, actionnable. " +
     "Pas de certitude diagnostique. Mets en avant les red flags et les infos manquantes. " +
@@ -1098,6 +1144,9 @@ async function generateDoctorAssistantText({ message, triage, hypotheses, histor
   const clinicalContext = [
     `Niveau de vigilance calcule: ${triage}`,
     `Hypotheses preliminaires (regles): ${hypotheses.join(" | ")}`,
+    `Localisation patient (dernier triage): ${patientLocation || "N/A"}`,
+    `Triage patient (dernier): ${patientTriageLevel || "N/A"} | resume=${patientTriageSummary || "N/A"}`,
+    `Specialiste probable (dernier triage patient): ${patientSpecialist || "N/A"}`,
     `Dernier message: ${message}`,
     "Format prefere (court): Synthese / Hypotheses / A verifier / Message patient (simple).",
   ].join("\n");
@@ -1110,6 +1159,86 @@ async function generateDoctorAssistantText({ message, triage, hypotheses, histor
     imageInputs,
   });
   return callLLM({ messages, temperature: 0.2, maxTokens: 650 });
+}
+
+// Step 1 (MVP): after OTP confirmation, prepare a first DRAFT report automatically.
+async function ensureDraftReportExistsForDoctorPatient({ doctorUserId, patientId }) {
+  const dId = Number(doctorUserId);
+  const pId = Number(patientId);
+  if (!Number.isInteger(dId) || !Number.isInteger(pId) || pId <= 0) return null;
+
+  const existing = await prisma.patientReport.findFirst({
+    where: { doctorUserId: dId, patientId: pId, status: "DRAFT" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing) return existing;
+
+  const lastSymptom = await prisma.symptomReport.findFirst({
+    where: { patientId: pId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      message: true,
+      location: true,
+      triageLevel: true,
+      triageSummary: true,
+      guidance: true,
+      nextStep: true,
+      specialist: true,
+    },
+  });
+  if (!lastSymptom) {
+    // No symptom info => cannot generate a draft.
+    return null;
+  }
+
+  const triageLevel = lastSymptom.triageLevel;
+  const triageSummary = lastSymptom.triageSummary;
+  const guidance = lastSymptom.guidance;
+  const nextStep = lastSymptom.nextStep;
+  const specialist = lastSymptom.specialist;
+
+  const hypotheses =
+    triageLevel === "RED"
+      ? ["Cas potentiellement critique a evaluer immediatement", "Verifier constantes vitales et protocoles d'urgence"]
+      : triageLevel === "ORANGE"
+      ? ["Consultation et examen clinique recommandes", "Approfondir bilan etiologique"]
+      : ["Tableau potentiellement benin selon les donnees fournies", "Surveillance et reevaluation si aggravation"];
+
+  const clinicalSummary = `Analyse clinique du message: ${lastSymptom.message}`;
+
+  let doctorDraftText = "";
+  try {
+    doctorDraftText = await generateDoctorAssistantText({
+      message: lastSymptom.message,
+      triage: triageLevel,
+      hypotheses,
+      historyMessages: [],
+      imageInputs: [],
+      patientLocation: lastSymptom.location || null,
+      patientTriageLevel: lastSymptom.triageLevel || null,
+      patientTriageSummary: lastSymptom.triageSummary || null,
+      patientSpecialist: lastSymptom.specialist || null,
+    });
+  } catch (_e) {
+    // Fallback concise if AI isn't available.
+    doctorDraftText = composeDoctorAssistantReply({ triage: triageLevel, clinicalSummary, hypotheses });
+  }
+
+  await prisma.patientReport.create({
+    data: {
+      patientId: pId,
+      doctorUserId: dId,
+      status: "DRAFT",
+      triageLevel,
+      triageSummary,
+      guidance,
+      nextStep,
+      specialist,
+      doctorDraftText,
+    },
+  });
+
+  return null;
 }
 
 async function generatePatientReportFromDoctor({
@@ -1161,6 +1290,7 @@ app.get("/", (_req, res) => {
       "POST /chat/conversations",
       "GET /chat/conversations/:id/messages",
       "POST /chat/conversations/:id/messages",
+      "DELETE /chat/conversations/:id",
       "GET /admin/doctor-requests",
       "POST /admin/doctor-requests/:userId/approve",
       "POST /admin/doctor-requests/:userId/reject",
@@ -1665,11 +1795,41 @@ app.post("/chat/conversations", authRequired, async (req, res) => {
         ? "Nouveau dossier clinique"
         : "Nouvelle discussion";
 
+    const patientIdRaw = req.body?.patientId;
+    let patientId = null;
+    let lockedUntil = null;
+
+    if (req.session.role === "DOCTOR" && patientIdRaw !== undefined && patientIdRaw !== null) {
+      const parsedPid = Number(patientIdRaw);
+      if (!Number.isInteger(parsedPid) || parsedPid <= 0) {
+        return res.status(400).json({ error: "patientId invalide." });
+      }
+
+      const linkOk = await prisma.doctorPatientLink.findFirst({
+        where: {
+          doctorUserId: req.session.id,
+          patientId: parsedPid,
+          status: "ACTIVE",
+          expiresAt: { gt: new Date() },
+        },
+        select: { expiresAt: true },
+      });
+
+      if (!linkOk) {
+        return res.status(403).json({ error: "Acces refuse. OTP requis/expire." });
+      }
+
+      patientId = parsedPid;
+      lockedUntil = linkOk.expiresAt;
+    }
+
     const conversation = await prisma.conversation.create({
       data: {
         userId: req.session.id,
         role: req.session.role === "DOCTOR" ? "DOCTOR" : "PATIENT",
         title,
+        patientId,
+        lockedUntil,
       },
     });
 
@@ -1695,9 +1855,58 @@ app.get("/chat/conversations/:id/messages", authRequired, async (req, res) => {
       return res.status(404).json({ error: "Conversation introuvable." });
     }
 
+    if (req.session.role === "DOCTOR" && !conversation.patientId) {
+      // Confidentiality: if a doctor conversation isn't locked to a patient yet,
+      // we deny access once it has any historical messages.
+      const existingCount = await prisma.chatMessage.count({ where: { conversationId } });
+      if (existingCount > 0) {
+        return res.status(403).json({
+          error: "Conversation non verrouillee. Creer une nouvelle conversation pour chaque patient.",
+        });
+      }
+    }
+
+    if (req.session.role === "DOCTOR" && conversation.patientId) {
+      if (conversation.lockedUntil && conversation.lockedUntil <= new Date()) {
+        return res.status(403).json({ error: "Acces refuse. Consultation expiree." });
+      }
+      const linkOk = await ensureDoctorHasActiveLink({
+        doctorUserId: req.session.id,
+        patientId: conversation.patientId,
+      });
+      if (!linkOk) {
+        return res.status(403).json({ error: "Acces refuse. OTP requis/expire." });
+      }
+    }
+
     return res.json(conversation);
   } catch (error) {
     return res.status(500).json({ error: "Erreur lecture messages", details: error.message });
+  }
+});
+
+app.delete("/chat/conversations/:id", authRequired, async (req, res) => {
+  try {
+    const conversationId = Number(req.params.id);
+    if (!Number.isInteger(conversationId) || conversationId <= 0) {
+      return res.status(400).json({ error: "ID conversation invalide." });
+    }
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { id: true, userId: true },
+    });
+
+    if (!conversation || conversation.userId !== req.session.id) {
+      return res.status(404).json({ error: "Conversation introuvable." });
+    }
+
+    await prisma.chatMessage.deleteMany({ where: { conversationId } });
+    await prisma.conversation.delete({ where: { id: conversationId } });
+
+    return res.json({ message: "Conversation supprimee.", id: conversationId });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur suppression conversation", details: error.message });
   }
 });
 
@@ -1737,6 +1946,52 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
 
     if (!conversation || conversation.userId !== req.session.id) {
       return res.status(404).json({ error: "Conversation introuvable." });
+    }
+
+    if (req.session.role === "DOCTOR") {
+      const now = new Date();
+      const linkedPatientId = patientId;
+
+      if (conversation.lockedUntil && conversation.lockedUntil <= now) {
+        return res.status(403).json({ error: "Acces refuse. Consultation expiree." });
+      }
+
+      if (conversation.patientId) {
+        if (!linkedPatientId || linkedPatientId !== conversation.patientId) {
+          return res
+            .status(403)
+            .json({ error: "Conversation verrouillee pour un autre patient. Creer une nouvelle conversation." });
+        }
+      } else {
+        // Prevent historical mixing: if the thread isn't locked yet but already contains messages,
+        // we refuse and ask the doctor to create a new conversation.
+        const existingCount = await prisma.chatMessage.count({ where: { conversationId } });
+        if (existingCount > 0) {
+          return res.status(403).json({
+            error: "Conversation non verrouillee et deja utilisee. Creer une nouvelle conversation pour ce patient.",
+          });
+        }
+
+        if (!linkedPatientId) {
+          return res.status(400).json({ error: "patientId requis pour analyse medecin (OTP obligatoire)." });
+        }
+
+        const link = await prisma.doctorPatientLink.findFirst({
+          where: { doctorUserId: req.session.id, patientId: linkedPatientId, status: "ACTIVE", expiresAt: { gt: now } },
+          select: { expiresAt: true },
+        });
+        if (!link) {
+          return res.status(403).json({ error: "Patient non autorise pour ce medecin. Realisez l'association via OTP." });
+        }
+
+        await prisma.conversation.update({
+          where: { id: conversationId },
+          data: {
+            patientId: linkedPatientId,
+            lockedUntil: link.expiresAt || null,
+          },
+        });
+      }
     }
 
     await prisma.chatMessage.create({
@@ -1846,7 +2101,8 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
           const systemPrompt =
             "Tu es l'Agent IA Patient d'une plateforme medicale. Objectif: conversation naturelle, empathique et utile, tout en restant prudent. " +
             "Tu ne poses pas de diagnostic. Tu expliques en mots simples. Tu poses 1 a 3 questions courtes si des infos manquent. " +
-            "Si le triage est RED, tu recommandes explicitement d'aller aux urgences immediatement.";
+            "Si le triage est RED, tu recommandes explicitement d'aller aux urgences immediatement. " +
+            "Si le triage est ORANGE ou RED, tu proposes explicitement la fonctionnalite 'Rendez-vous' dans l'app (ajouter localisation puis demande de consultation).";
 
           const triageContext = [
             safePatientContext,
@@ -1971,6 +2227,12 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
         });
       }
 
+      const lastPatientSymptom = await prisma.symptomReport.findFirst({
+        where: { patientId: linkedPatientId },
+        orderBy: { createdAt: "desc" },
+        select: { location: true, triageLevel: true, triageSummary: true, specialist: true },
+      });
+
       const triageResult = detectTriage(message);
       triageLevel = triageResult.triage;
       const triageSummary = triageResult.summary;
@@ -2025,6 +2287,9 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
           const clinicalContext = [
             `Niveau de vigilance calcule: ${triageLevel}`,
             `Hypotheses preliminaires (regles): ${hypotheses.join(" | ")}`,
+            `Localisation patient (dernier triage): ${lastPatientSymptom?.location || "N/A"}`,
+            `Triage patient (dernier): ${lastPatientSymptom?.triageLevel || "N/A"} | resume=${lastPatientSymptom?.triageSummary || "N/A"}`,
+            `Specialiste probable (dernier triage patient): ${lastPatientSymptom?.specialist || "N/A"}`,
             `Dernier message: ${message}`,
             "Format prefere (court): Synthese / Hypotheses / A verifier / Message patient (simple).",
           ].join("\n");
@@ -2059,6 +2324,10 @@ app.post("/chat/conversations/:id/messages", chatLimiter, authRequired, async (r
             hypotheses,
             historyMessages,
             imageInputs,
+            patientLocation: lastPatientSymptom?.location || null,
+            patientTriageLevel: lastPatientSymptom?.triageLevel || null,
+            patientTriageSummary: lastPatientSymptom?.triageSummary || null,
+            patientSpecialist: lastPatientSymptom?.specialist || null,
           });
         }
       } catch (error) {
@@ -2352,8 +2621,19 @@ app.post("/doctor/patient-link/confirm-otp", authLimiter, authRequired, requireR
 
     await prisma.doctorPatientLink.updateMany({
       where: { doctorUserId: req.session.id, patientId },
-      data: { status: "ACTIVE", updatedAt: new Date() },
+      data: { status: "ACTIVE", updatedAt: new Date(), expiresAt: getDoctorPatientActiveTtlExpiresAt() },
     });
+
+    // Step 1 (MVP): auto-create an initial DRAFT report for this patient
+    // so the doctor can validate without sending any extra message.
+    try {
+      await ensureDraftReportExistsForDoctorPatient({
+        doctorUserId: req.session.id,
+        patientId,
+      });
+    } catch (_e) {
+      // best-effort: UI can still work after manual doctor message.
+    }
 
     return res.json({ message: "Association confirme. Rapport autorise.", status: "ACTIVE" });
   } catch (error) {
@@ -2372,11 +2652,526 @@ app.get("/doctor/patient-link/status", authRequired, requireRole("DOCTOR"), asyn
       where: { doctorUserId: req.session.id, patientId },
       orderBy: { updatedAt: "desc" },
     });
-    return res.json({ status: link?.status || "NONE" });
+    const now = new Date();
+    const status =
+      link?.status === "ACTIVE" && link.expiresAt && link.expiresAt <= now ? "EXPIRED" : link?.status || "NONE";
+    return res.json({ status });
   } catch (error) {
     return res.status(500).json({ error: "Erreur status-link", details: error.message });
   }
 });
+
+// Patient: dernier triage / contexte (pour afficher rendez-vous + medecins)
+app.get("/patient/symptom-reports/latest", authRequired, requireRole("PATIENT"), async (req, res) => {
+  try {
+    const patient = await prisma.patient.findUnique({
+      where: { userId: req.session.id },
+      include: { user: true },
+    });
+
+    if (!patient?.id) return res.status(404).json({ error: "Patient introuvable." });
+
+    const report = await prisma.symptomReport.findFirst({
+      where: { patientId: patient.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        triageLevel: true,
+        triageSummary: true,
+        guidance: true,
+        nextStep: true,
+        specialist: true,
+        location: true,
+        doctorsJson: true,
+        createdAt: true,
+      },
+    });
+
+    if (!report) return res.json({ report: null });
+
+    let doctors = [];
+    try {
+      doctors = JSON.parse(report.doctorsJson || "[]");
+      if (!Array.isArray(doctors)) doctors = [];
+    } catch (_e) {
+      doctors = [];
+    }
+
+    return res.json({
+      report: {
+        ...report,
+        doctors,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur patient/symptom-reports/latest", details: error.message });
+  }
+});
+
+// Patient: statut association medecin-patient (OTP)
+app.get("/patient/doctor-link/status", authRequired, requireRole("PATIENT"), async (req, res) => {
+  try {
+    const patient = await prisma.patient.findUnique({
+      where: { userId: req.session.id },
+    });
+    if (!patient?.id) return res.status(404).json({ error: "Patient introuvable." });
+
+    const latestSymptom = await prisma.symptomReport.findFirst({
+      where: { patientId: patient.id },
+      orderBy: { createdAt: "desc" },
+      select: { triageLevel: true, specialist: true, location: true, createdAt: true },
+    });
+
+    const link = await prisma.doctorPatientLink.findFirst({
+      where: { patientId: patient.id },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        doctorUserId: true,
+        status: true,
+        updatedAt: true,
+        doctor: { select: { fullName: true, doctorProfile: { select: { specialty: true } } } },
+      },
+    });
+
+    return res.json({
+      status: link?.status || "NONE",
+      doctor: link?.doctor
+        ? {
+            userId: link.doctorUserId,
+            fullName: link.doctor.fullName,
+            specialty: link.doctor.doctorProfile?.specialty || null,
+          }
+        : null,
+      latestSymptom: latestSymptom || null,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur patient/doctor-link/status", details: error.message });
+  }
+});
+
+// Patient: recherche de medecins pres de la localisation (Google si live, sinon mock)
+app.get("/patient/doctors/search", authRequired, requireRole("PATIENT"), async (req, res) => {
+  try {
+    const schema = z.object({
+      near: z.string().trim().min(2).max(250),
+      specialist: z.string().trim().min(2).max(120).optional(),
+    });
+
+    const parsed = schema.safeParse({
+      near: req.query.near,
+      specialist: req.query.specialist,
+    });
+
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
+    }
+
+    const { near, specialist } = parsed.data;
+    const finalSpecialist = specialist || "medecin generaliste";
+
+    let doctors = [];
+    let usedGoogle = false;
+    if (AI_MODE === "live" && GOOGLE_MAPS_API_KEY) {
+      try {
+        doctors = await searchDoctorsFromGoogle({ specialist: finalSpecialist, near });
+        usedGoogle = true;
+      } catch (_e) {
+        doctors = [];
+      }
+    }
+
+    if (!doctors.length) {
+      doctors = getMockDoctors(finalSpecialist, near);
+    }
+
+    return res.json({ doctors, usedGoogle });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur patient/doctors/search", details: error.message });
+  }
+});
+
+// Patient: demarrer une consultation via OTP (association medecin/patient)
+app.post("/patient/consultation/request", authLimiter, authRequired, requireRole("PATIENT"), async (req, res) => {
+  try {
+    const schema = z.object({
+      // optionnel: pour forcer un medecin specific
+      doctorUserId: z.number().int().positive().optional(),
+      // optionnel: aider a stocker la localisation cote SymptomReport (dernier triage)
+      location: z.string().trim().max(200).optional(),
+    });
+
+    const parsed = schema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { userId: req.session.id },
+      include: { user: true },
+    });
+    if (!patient?.id || !patient.user?.email) {
+      return res.status(404).json({ error: "Patient introuvable (ou email manquant)." });
+    }
+
+    const latestSymptom = await prisma.symptomReport.findFirst({
+      where: { patientId: patient.id },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, specialist: true, location: true },
+    });
+
+    const patientSpecialist = latestSymptom?.specialist || "medecin generaliste";
+
+    // Mise a jour best-effort de la localisation du dernier triage
+    if (typeof parsed.data.location === "string" && parsed.data.location.trim() && latestSymptom?.id) {
+      await prisma.symptomReport
+        .updateMany({
+          where: { patientId: patient.id, id: latestSymptom.id },
+          data: { location: parsed.data.location.trim() },
+        })
+        .catch(() => {});
+    }
+
+    let doctorUserId = parsed.data.doctorUserId;
+
+    // Auto-selection si pas de medecin impose
+    if (!doctorUserId) {
+      const normalizedSpecialist = normalize(patientSpecialist);
+      const candidates = await prisma.user.findMany({
+        where: {
+          role: "DOCTOR",
+          status: "ACTIVE",
+          doctorProfile: {
+            specialty: { contains: patientSpecialist, mode: "insensitive" },
+          },
+        },
+        include: { doctorProfile: true },
+      });
+
+      const fallbackCandidates = candidates.length
+        ? candidates
+        : await prisma.user.findMany({
+            where: { role: "DOCTOR", status: "ACTIVE" },
+            include: { doctorProfile: true },
+            take: 15,
+          });
+
+      const sorted = fallbackCandidates
+        .filter((u) => u.doctorProfile?.specialty)
+        .sort((a, b) => Number(b.doctorProfile?.yearsExperience || 0) - Number(a.doctorProfile?.yearsExperience || 0));
+
+      doctorUserId = sorted[0]?.id || null;
+    }
+
+    if (!doctorUserId) {
+      return res.status(409).json({ error: "Aucun medecin disponible dans l'app pour ce profil." });
+    }
+
+    // Si deja associe activement, on retourne directement.
+    const alreadyActive = await prisma.doctorPatientLink.findFirst({
+      where: { doctorUserId, patientId: patient.id, status: "ACTIVE" },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (alreadyActive) {
+      return res.json({ message: "Association deja activee.", status: "ACTIVE" });
+    }
+
+    // Reset OTP + lien pending pour ce doctor/patient
+    await prisma.pairingOtp.deleteMany({ where: { doctorUserId, patientId: patient.id } });
+    await prisma.doctorPatientLink.deleteMany({ where: { doctorUserId, patientId: patient.id } });
+
+    const rawOtp = issueOtpCode();
+    const otpHash = sha256(rawOtp);
+    await prisma.pairingOtp.create({
+      data: {
+        doctorUserId,
+        patientId: patient.id,
+        otpHash,
+        expiresAt: otpExpiryDate(),
+        attempts: 0,
+      },
+    });
+
+    await prisma.doctorPatientLink.create({
+      data: {
+        doctorUserId,
+        patientId: patient.id,
+        status: "PENDING",
+      },
+    });
+
+    const to = patient.user.email;
+    const subject = "Code OTP - Consultation dans l'app (Medical AI)";
+    const text = `Bonjour ${patient.fullName || ""},\n\nVotre code OTP pour associer votre dossier a un medecin est : ${rawOtp}\n\nCe code expire dans ${getOtpTtlMinutes()} minutes.`;
+
+    try {
+      await sendEmail({ to, subject, text });
+    } catch (_e) {
+      // best effort: SMTP non configure -> on garde quand meme la demande activee
+    }
+
+    const doctor = await prisma.user.findUnique({
+      where: { id: doctorUserId },
+      select: { fullName: true },
+    });
+
+    return res.json({
+      message: "Demande de consultation creee. Un code OTP a ete envoye au patient (best effort).",
+      status: "PENDING",
+      expiresInMinutes: getOtpTtlMinutes(),
+      doctor: doctor || null,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur patient/consultation/request", details: error.message });
+  }
+});
+
+// Doctor: liste des demandes en attente (OTP envoye ou association pending)
+app.get("/doctor/patient-link/pending", authRequired, requireRole("DOCTOR"), async (req, res) => {
+  try {
+    const links = await prisma.doctorPatientLink.findMany({
+      where: { doctorUserId: req.session.id, status: "PENDING" },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            fullName: true,
+            user: { select: { email: true } },
+            city: true,
+            symptomReports: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: {
+                triageLevel: true,
+                specialist: true,
+                location: true,
+                triageSummary: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+      },
+      take: 10,
+    });
+
+    return res.json({
+      links: links.map((l) => ({
+        doctorPatientLinkId: l.id,
+        patientId: l.patientId,
+        patientName: l.patient?.fullName || "",
+        patientEmail: l.patient?.user?.email || null,
+        patientCity: l.patient?.city || null,
+        status: l.status,
+        latestSymptom: (l.patient?.symptomReports || [])[0] || null,
+        updatedAt: l.updatedAt,
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur doctor/patient-link/pending", details: error.message });
+  }
+});
+
+// --- OTP medecin-patient via email patient ---
+app.post(
+  "/doctor/patient-link/request-otp-by-email",
+  authLimiter,
+  authRequired,
+  requireRole("DOCTOR"),
+  async (req, res) => {
+    try {
+      const schema = z.object({
+        patientEmail: z.string().trim().email(),
+      });
+      const parsed = schema.safeParse(req.body || {});
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
+      }
+
+      const { patientEmail } = parsed.data;
+      const patientRef = await getPatientForEmailString(patientEmail);
+      if (!patientRef) return res.status(404).json({ error: "Patient introuvable pour cet email." });
+
+      const patientId = patientRef.patientId;
+
+      // Reset pending OTPs for this doctor/patient.
+      await prisma.pairingOtp.deleteMany({
+        where: {
+          doctorUserId: req.session.id,
+          patientId,
+        },
+      });
+
+      await prisma.doctorPatientLink.deleteMany({
+        where: { doctorUserId: req.session.id, patientId },
+      });
+
+      const rawOtp = issueOtpCode();
+      const otpHash = sha256(rawOtp);
+
+      await prisma.pairingOtp.create({
+        data: {
+          doctorUserId: req.session.id,
+          patientId,
+          otpHash,
+          expiresAt: otpExpiryDate(),
+          attempts: 0,
+        },
+      });
+
+      await prisma.doctorPatientLink.create({
+        data: {
+          doctorUserId: req.session.id,
+          patientId,
+          status: "PENDING",
+        },
+      });
+
+      const to = patientRef.email;
+      const subject = "Code OTP - Association medecin/patient (Medical AI)";
+      const text = `Bonjour ${patientRef.fullName || ""},\n\nVotre code OTP pour associer votre patient a un medecin est : ${rawOtp}\n\nCe code expire dans ${getOtpTtlMinutes()} minutes.`;
+
+      try {
+        await sendEmail({ to, subject, text });
+      } catch (_e) {
+        // best effort (SMTP non configure)
+      }
+
+      return res.json({
+        message: "OTP envoye (best effort).",
+        status: "PENDING",
+        patientId,
+        expiresInMinutes: getOtpTtlMinutes(),
+      });
+    } catch (error) {
+      return res.status(500).json({ error: "Erreur request-otp-by-email", details: error.message });
+    }
+  }
+);
+
+app.post(
+  "/doctor/patient-link/confirm-otp-by-email",
+  authLimiter,
+  authRequired,
+  requireRole("DOCTOR"),
+  async (req, res) => {
+    try {
+      const schema = z.object({
+        patientEmail: z.string().trim().email(),
+        otp: z.string().trim(),
+      });
+      const parsed = schema.safeParse(req.body || {});
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
+      }
+
+      const { patientEmail, otp } = parsed.data;
+      if (!isValidOtpCode(otp)) {
+        return res.status(400).json({ error: "OTP invalide. Format attendu: 4 a 6 chiffres." });
+      }
+
+      const patientRef = await getPatientForEmailString(patientEmail);
+      if (!patientRef) return res.status(404).json({ error: "Patient introuvable pour cet email." });
+
+      const patientId = patientRef.patientId;
+
+      const now = new Date();
+      const record = await prisma.pairingOtp.findFirst({
+        where: {
+          doctorUserId: req.session.id,
+          patientId,
+          consumedAt: null,
+          expiresAt: { gt: now },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (!record) {
+        return res.status(403).json({ error: "OTP invalide ou expire." });
+      }
+
+      const currentAttempts = Number(record.attempts || 0);
+      if (currentAttempts >= DOCTOR_PATIENT_OTP_MAX_ATTEMPTS) {
+        await prisma.doctorPatientLink.updateMany({
+          where: { doctorUserId: req.session.id, patientId },
+          data: { status: "EXPIRED" },
+        }).catch(() => {});
+        return res.status(403).json({ error: "Nombre de tentatives depasse." });
+      }
+
+      const otpHash = sha256(otp);
+      const otpMatches = record.otpHash === otpHash;
+      if (!otpMatches) {
+        await prisma.pairingOtp.update({
+          where: { id: record.id },
+          data: { attempts: currentAttempts + 1 },
+        }).catch(() => {});
+        return res.status(403).json({ error: "OTP incorrect." });
+      }
+
+      await prisma.pairingOtp.update({
+        where: { id: record.id },
+        data: { consumedAt: new Date(), attempts: currentAttempts + 1 },
+      });
+
+      await prisma.doctorPatientLink.updateMany({
+        where: { doctorUserId: req.session.id, patientId },
+        data: { status: "ACTIVE", updatedAt: new Date(), expiresAt: getDoctorPatientActiveTtlExpiresAt() },
+      });
+
+      // Step 1 (MVP): auto-create an initial DRAFT report for this patient.
+      try {
+        await ensureDraftReportExistsForDoctorPatient({
+          doctorUserId: req.session.id,
+          patientId,
+        });
+      } catch (_e) {
+        // best-effort
+      }
+
+      return res.json({
+        message: "Association via OTP confirmee. Rapport autorise.",
+        status: "ACTIVE",
+        patientId,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: "Erreur confirm-otp-by-email", details: error.message });
+    }
+  }
+);
+
+app.get(
+  "/doctor/patient-link/status-by-email",
+  authRequired,
+  requireRole("DOCTOR"),
+  async (req, res) => {
+    try {
+      const schema = z.object({ patientEmail: z.string().trim().email() });
+      const parsed = schema.safeParse({ patientEmail: req.query.patientEmail });
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
+      }
+
+      const { patientEmail } = parsed.data;
+      const patientRef = await getPatientForEmailString(patientEmail);
+      if (!patientRef) return res.status(404).json({ error: "Patient introuvable pour cet email." });
+
+      const patientId = patientRef.patientId;
+      const link = await prisma.doctorPatientLink.findFirst({
+        where: { doctorUserId: req.session.id, patientId },
+        orderBy: { updatedAt: "desc" },
+      });
+
+      const now = new Date();
+      const status =
+        link?.status === "ACTIVE" && link.expiresAt && link.expiresAt <= now ? "EXPIRED" : link?.status || "NONE";
+      return res.json({ status, patientId });
+    } catch (error) {
+      return res.status(500).json({ error: "Erreur status-by-email", details: error.message });
+    }
+  }
+);
 
 // Patient can fetch latest approved report (post validation)
 app.get("/patient/reports/latest", authRequired, requireRole("PATIENT"), async (req, res) => {

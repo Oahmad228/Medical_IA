@@ -133,6 +133,11 @@ model Conversation {
   user      User             @relation(fields: [userId], references: [id])
   role      ConversationRole
   title     String
+  // For DOCTOR conversations: lock this thread to a specific patient to prevent data mixing.
+  // Nullable so existing conversations can still work.
+  patientId Int?
+  // When set, the doctor-patient access expires and the conversation becomes inaccessible.
+  lockedUntil DateTime?
   summary   String?
   summaryUpdatedAt DateTime?
   summaryMessageCount Int @default(0)
@@ -192,6 +197,8 @@ model DoctorPatientLink {
   status       DoctorPatientLinkStatus @default(PENDING)
   createdAt    DateTime                  @default(now())
   updatedAt    DateTime                  @updatedAt
+  // Access validity window for ACTIVE link.
+  expiresAt   DateTime?
 
   @@index([doctorUserId, patientId])
 }

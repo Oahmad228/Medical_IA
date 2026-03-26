@@ -211,6 +211,7 @@ Devient :
 - `POST /chat/conversations`
 - `GET /chat/conversations/:id/messages`
 - `POST /chat/conversations/:id/messages`
+- `DELETE /chat/conversations/:id`
 
 ### Admin (superadmin)
 

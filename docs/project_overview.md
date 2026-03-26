@@ -67,14 +67,17 @@ Les images sont transmises au LLM dans le contexte (mode live) pour aider l'assi
 - ORANGE: consultation rapide recommandee
 - RED: urgence immediate recommandee
 
-### 4.3 Chibi patient (images reelles)
+### 4.3 Chibi patient (scene animee + images statiques)
 
-- le patient voit une carte chibi avec image reelle (pas emoji)
-- etat visuel adapte a la gravite:
-  - GREEN: calme/meditation
-  - ORANGE: vigilance
-  - RED: alerte
-- couleurs renforcees pour une meilleure lisibilite
+- grande scene avec deplacement du personnage (CSS) selon la gravite
+- personas avec images (OpenMoji) dans `public/chibi/`
+- **12 images PNG statiques** lues dans `frontend/public/chibi/` :
+  - GREEN  -> `Chibi_Calm_{subject}.png`
+  - ORANGE -> `chibi_jaune_{subject}.png`
+  - RED    -> `chibi_rouge_{subject}.png`
+  - `subject` : `docter`, `nurse`, `hibou`, `chien` (selon le persona)
+  - detail des noms : `frontend/public/chibi/videos/LISEZ-MOI.txt`
+- etat visuel adapte a la gravite (GREEN / ORANGE / RED)
 
 ### 4.4 OTP medecin-patient
 
