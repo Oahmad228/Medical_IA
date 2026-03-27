@@ -1,62 +1,136 @@
-const { GOOGLE_MAPS_API_KEY, AI_MODE } = require("../config/env");
+const { normalize } = require("../utils/normalize");
+
+const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
+const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+const USER_AGENT = "MedicalAI/1.0 (contact: support@medical-ai.local)";
 
 /**
- * [Module: src/services/doctorSearchService.js] getMockDoctors
- * Returns fallback doctor suggestions when Google Places is disabled.
+ * [Module: src/services/doctorSearchService.js] geocodeLocation
+ * Resolves a human-readable location into lat/lon coordinates using Nominatim.
  */
-function getMockDoctors(specialist, near) {
-  return [
-    {
-      name: `Cabinet ${specialist} Centre`,
-      address: near ? `${near} - Centre` : "Centre-ville",
-      phone: "+212 5 22 00 00 01",
-      rating: 4.6,
-    },
-    {
-      name: `Clinique ${specialist} Horizon`,
-      address: near ? `${near} - Quartier Nord` : "Quartier Nord",
-      phone: "+212 5 22 00 00 02",
-      rating: 4.4,
-    },
-    {
-      name: `Dr. ${specialist} Atlas`,
-      address: near ? `${near} - Quartier Sud` : "Quartier Sud",
-      phone: "+212 5 22 00 00 03",
-      rating: 4.2,
-    },
-  ];
-}
+async function geocodeLocation(near) {
+  const url = new URL(NOMINATIM_URL);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("limit", "1");
+  url.searchParams.set("q", String(near || "").trim());
 
-/**
- * [Module: src/services/doctorSearchService.js] searchDoctorsFromGoogle
- * Queries Google Places API for doctors near a location.
- */
-async function searchDoctorsFromGoogle({ specialist, near }) {
-  if (AI_MODE !== "live" || !GOOGLE_MAPS_API_KEY) {
-    throw new Error("Google Places indisponible.");
-  }
+  const response = await fetch(url, {
+    headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+  });
 
-  const query = `${specialist} pres de ${near}`;
-
-  const url = new URL("https://maps.googleapis.com/maps/api/place/textsearch/json");
-  url.searchParams.set("query", query);
-  url.searchParams.set("type", "doctor");
-  url.searchParams.set("key", GOOGLE_MAPS_API_KEY);
-
-  const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Google Places request failed (${response.status})`);
+    throw new Error(`Nominatim error (${response.status})`);
   }
 
   const payload = await response.json();
-  if (!Array.isArray(payload?.results)) return [];
+  const first = Array.isArray(payload) ? payload[0] : null;
+  if (!first?.lat || !first?.lon) return null;
 
-  return payload.results.slice(0, 6).map((place) => ({
-    name: place.name,
-    address: place.formatted_address,
-    rating: place.rating,
-    phone: null,
-  }));
+  return {
+    lat: Number(first.lat),
+    lon: Number(first.lon),
+    label: first.display_name || null,
+  };
 }
 
-module.exports = { getMockDoctors, searchDoctorsFromGoogle };
+/**
+ * [Module: src/services/doctorSearchService.js] buildAddress
+ * Formats an address string from OpenStreetMap tags.
+ */
+function buildAddress(tags, fallback) {
+  const parts = [];
+  if (tags["addr:housenumber"]) parts.push(tags["addr:housenumber"]);
+  if (tags["addr:street"]) parts.push(tags["addr:street"]);
+  if (tags["addr:city"]) parts.push(tags["addr:city"]);
+  if (tags["addr:postcode"]) parts.push(tags["addr:postcode"]);
+  const built = parts.filter(Boolean).join(" ").trim();
+  return built || fallback || "Adresse non disponible";
+}
+
+/**
+ * [Module: src/services/doctorSearchService.js] matchesSpecialist
+ * Checks if an OSM element matches the requested specialist.
+ */
+function matchesSpecialist(tags, specialist) {
+  const needle = normalize(specialist || "").trim();
+  if (!needle) return true;
+
+  const haystack = normalize(
+    [
+      tags.name,
+      tags.amenity,
+      tags.healthcare,
+      tags.speciality,
+      tags["healthcare:speciality"],
+      tags["healthcare:provider"],
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+
+  return haystack.includes(needle);
+}
+
+/**
+ * [Module: src/services/doctorSearchService.js] searchDoctorsFromOSM
+ * Searches for nearby doctors using OpenStreetMap (Nominatim + Overpass).
+ */
+async function searchDoctorsFromOSM({ specialist, near, radiusMeters = 5000 }) {
+  const geo = await geocodeLocation(near);
+  if (!geo) return [];
+
+  const query = [
+    "[out:json][timeout:25];(",
+    `  node["healthcare"~"doctor|clinic"](around:${radiusMeters},${geo.lat},${geo.lon});`,
+    `  way["healthcare"~"doctor|clinic"](around:${radiusMeters},${geo.lat},${geo.lon});`,
+    `  relation["healthcare"~"doctor|clinic"](around:${radiusMeters},${geo.lat},${geo.lon});`,
+    `  node["amenity"~"doctors|clinic"](around:${radiusMeters},${geo.lat},${geo.lon});`,
+    `  way["amenity"~"doctors|clinic"](around:${radiusMeters},${geo.lat},${geo.lon});`,
+    `  relation["amenity"~"doctors|clinic"](around:${radiusMeters},${geo.lat},${geo.lon});`,
+    ");",
+    "out center 20;",
+  ].join("\n");
+
+  const response = await fetch(OVERPASS_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": USER_AGENT,
+      Accept: "application/json",
+    },
+    body: `data=${encodeURIComponent(query)}`,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Overpass error (${response.status})`);
+  }
+
+  const payload = await response.json();
+  const elements = Array.isArray(payload?.elements) ? payload.elements : [];
+
+  const mapped = elements
+    .map((el) => {
+      const tags = el.tags || {};
+      if (!matchesSpecialist(tags, specialist)) return null;
+
+      const lat = el.lat ?? el.center?.lat;
+      const lon = el.lon ?? el.center?.lon;
+      const name = tags.name || "Cabinet medical";
+      const address = buildAddress(tags, geo.label);
+      const phone = tags.phone || tags["contact:phone"] || null;
+
+      return {
+        name,
+        address,
+        phone,
+        rating: null,
+        lat: typeof lat === "number" ? lat : null,
+        lon: typeof lon === "number" ? lon : null,
+      };
+    })
+    .filter(Boolean);
+
+  return mapped.slice(0, 6);
+}
+
+module.exports = { searchDoctorsFromOSM };

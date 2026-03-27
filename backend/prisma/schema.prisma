@@ -43,6 +43,14 @@ enum PatientReportStatus {
   SENT
 }
 
+enum AppointmentStatus {
+  REQUESTED
+  ACCEPTED
+  REJECTED
+  CANCELED
+  RESCHEDULED
+}
+
 enum MessageAuthor {
   USER
   ASSISTANT
@@ -69,6 +77,7 @@ model User {
   doctorPatientLinks DoctorPatientLink[] @relation("DoctorPatientLinkDoctor")
   pairingOtps PairingOtp[] @relation("PairingOtpDoctor")
   patientReports PatientReport[] @relation("PatientReportDoctor")
+  doctorAppointments Appointment[] @relation("AppointmentDoctor")
 }
 
 model EmailVerificationToken {
@@ -110,6 +119,7 @@ model Patient {
   doctorPatientLinks DoctorPatientLink[] @relation("DoctorPatientLinkPatient")
   pairingOtps PairingOtp[] @relation("PairingOtpPatient")
   patientReports PatientReport[] @relation("PatientReportPatient")
+  appointments Appointment[] @relation("AppointmentPatient")
 }
 
 model DoctorProfile {
@@ -120,6 +130,11 @@ model DoctorProfile {
   licenseNumber   String    @unique
   yearsExperience Int?
   bio             String?
+  clinicName      String?
+  clinicAddress   String?
+  clinicCity      String?
+  clinicLat       Float?
+  clinicLng       Float?
   reviewedById    Int?
   reviewedBy      User?     @relation("DoctorReviewer", fields: [reviewedById], references: [id])
   approvalNote    String?
@@ -164,12 +179,13 @@ model SymptomReport {
   message         String
   location        String?
   triageLevel     String
+  emotionLevel    String?
   triageSummary   String
   guidance        String
   nextStep        String
   specialist      String
   doctorsJson     String
-  aiMode          String
+  aiMode          String   @default("live")
   usedGooglePlace Boolean  @default(false)
   createdAt       DateTime @default(now())
 }
@@ -236,6 +252,8 @@ model PatientReport {
   doctorDraftText String
   patientFinalText String?
 
+  emotionLevel String?
+
   approvedAt   DateTime?
   sentAt       DateTime?
   createdAt    DateTime         @default(now())
@@ -243,4 +261,22 @@ model PatientReport {
 
   @@index([patientId, status])
   @@index([doctorUserId, patientId, createdAt])
+}
+
+model Appointment {
+  id           Int               @id @default(autoincrement())
+  patientId    Int
+  patient      Patient          @relation("AppointmentPatient", fields: [patientId], references: [id])
+  doctorUserId Int
+  doctor       User             @relation("AppointmentDoctor", fields: [doctorUserId], references: [id])
+  status       AppointmentStatus @default(REQUESTED)
+  requestedAt  DateTime          @default(now())
+  scheduledFor DateTime?
+  patientNote  String?
+  doctorNote   String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([doctorUserId, status])
+  @@index([patientId, status])
 }

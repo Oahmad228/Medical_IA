@@ -220,7 +220,7 @@ async function postMessage(req, res) {
     return res.json({
       assistantMessage,
       triageLevel: handlerResult.triageLevel || null,
-      aiFallbackUsed: handlerResult.aiFallbackUsed || false,
+      emotionLevel: handlerResult.emotionLevel || null,
       imagesProvided,
       visionUsed,
     });

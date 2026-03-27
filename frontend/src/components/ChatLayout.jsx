@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { safeJsonParse } from "../lib/utils";
 
 export default function ChatLayout({
@@ -6,6 +6,8 @@ export default function ChatLayout({
   layoutVariant,
   /** patient: ID optionnel sous le composer ; doctor: ID uniquement dans le panneau droit */
   composerMetaMode = "patient",
+  showLocationInput = true,
+  showPatientIdInput = false,
   conversations,
   selectedConversationId,
   onSelectConversation,
@@ -24,17 +26,57 @@ export default function ChatLayout({
   onRemoveImage,
 }) {
   const fileInputRef = useRef(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const isPatient = layoutVariant === "patient";
   const isDoctorMeta = composerMetaMode === "doctor";
 
+  const handleSelectConversation = async (id) => {
+    setHistoryOpen(false);
+    await onSelectConversation(id);
+  };
+
   return (
     <section className={`chat-shell ${isPatient ? "chat-shell--patient" : "chat-shell--doctor"}`}>
-      <aside className="panel history-panel glass-panel">
+      {historyOpen ? (
+        <button
+          type="button"
+          className="history-overlay"
+          aria-label="Fermer la liste des conversations"
+          onClick={() => setHistoryOpen(false)}
+        />
+      ) : null}
+      <aside
+        className={`panel history-panel glass-panel ${historyOpen ? "history-panel--open" : ""}`}
+      >
         <div className="panel-head">
           <h2>Conversations</h2>
-          <button type="button" className="btn-pill" onClick={onCreateConversation}>
-            + Nouveau
-          </button>
+          <div className="panel-head-actions">
+            <button
+              type="button"
+              className="btn-pill"
+              onClick={async () => {
+                await onCreateConversation();
+                setHistoryOpen(false);
+              }}
+            >
+              + Nouveau
+            </button>
+            <button
+              type="button"
+              className="history-close"
+              aria-label="Fermer"
+              onClick={() => setHistoryOpen(false)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M6 6l12 12M18 6l-12 12"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="history-list">
           {conversations.length === 0 ? (
@@ -52,7 +94,7 @@ export default function ChatLayout({
                 <button
                   type="button"
                   className="history-row__main"
-                  onClick={() => onSelectConversation(conversation.id)}
+                  onClick={() => handleSelectConversation(conversation.id)}
                 >
                   <strong>{conversation.title}</strong>
                   <span>{new Date(conversation.updatedAt).toLocaleString()}</span>
@@ -85,6 +127,13 @@ export default function ChatLayout({
 
       <main className="panel conversation-panel glass-panel">
         <div className="panel-head panel-head--chat">
+          <button
+            type="button"
+            className="history-toggle"
+            onClick={() => setHistoryOpen(true)}
+          >
+            Conversations
+          </button>
           <div>
             <p className="chat-eyebrow">Discussion</p>
             <h2>{role === "DOCTOR" ? "Assistant clinique" : "Assistant patient"}</h2>
@@ -201,33 +250,41 @@ export default function ChatLayout({
               </div>
             ) : null}
           </div>
-          <div
-            className={
-              isDoctorMeta ? "composer-meta composer-meta--doctor" : "composer-meta"
-            }
-          >
-            <input
-              className="composer-meta-input"
-              placeholder="Localisation (optionnel)"
-              value={composer.location}
-              onChange={(e) =>
-                setComposer((prev) => ({ ...prev, location: e.target.value }))
+          {showLocationInput || showPatientIdInput ? (
+            <div
+              className={
+                isDoctorMeta ? "composer-meta composer-meta--doctor" : "composer-meta"
               }
-            />
-            {!isDoctorMeta ? (
-              <input
-                className="composer-meta-input"
-                placeholder="Patient ID (optionnel)"
-                value={composer.patientId}
-                onChange={(e) =>
-                  setComposer((prev) => ({ ...prev, patientId: e.target.value }))
-                }
-              />
-            ) : null}
-          </div>
+            >
+              {showLocationInput ? (
+                <input
+                  className="composer-meta-input"
+                  placeholder="Localisation (utile pour les medecins)"
+                  value={composer.location}
+                  onChange={(e) =>
+                    setComposer((prev) => ({ ...prev, location: e.target.value }))
+                  }
+                />
+              ) : null}
+              {showPatientIdInput ? (
+                <input
+                  className="composer-meta-input"
+                  placeholder="Patient ID (optionnel)"
+                  value={composer.patientId}
+                  onChange={(e) =>
+                    setComposer((prev) => ({ ...prev, patientId: e.target.value }))
+                  }
+                />
+              ) : null}
+            </div>
+          ) : null}
           {isDoctorMeta ? (
             <p className="composer-meta-hint muted">
               ID patient, OTP et validation du rapport : panneau de droite.
+            </p>
+          ) : showLocationInput ? (
+            <p className="composer-meta-hint muted">
+              La localisation aide a proposer des medecins proches et a mieux adapter le triage.
             </p>
           ) : null}
           {sendError ? <p className="error-text composer-status">{sendError}</p> : null}

@@ -1,6 +1,6 @@
 const express = require("express");
 const { prisma } = require("../db/prisma");
-const { AI_MODE, LLM_PROVIDER, LLM_API_KEY, LLM_MODEL } = require("../config/env");
+const { LLM_PROVIDER, LLM_API_KEY, LLM_MODEL } = require("../config/env");
 
 /**
  * [Module: src/routes/health.js] rootHandler
@@ -22,6 +22,14 @@ function rootHandler(_req, res) {
       "GET /chat/conversations/:id/messages",
       "POST /chat/conversations/:id/messages",
       "DELETE /chat/conversations/:id",
+      "POST /patient/appointments/request",
+      "GET /patient/appointments",
+      "POST /patient/appointments/:id/cancel",
+      "GET /doctor/appointments",
+      "POST /doctor/appointments/:id/accept",
+      "POST /doctor/appointments/:id/reject",
+      "POST /doctor/appointments/:id/cancel",
+      "POST /doctor/appointments/:id/reschedule",
       "GET /admin/doctor-requests",
       "POST /admin/doctor-requests/:userId/approve",
       "POST /admin/doctor-requests/:userId/reject",
@@ -39,7 +47,6 @@ async function healthHandler(_req, res) {
     return res.json({
       status: "ok",
       service: "medical-ai-backend",
-      aiMode: AI_MODE,
       llmProvider: LLM_PROVIDER,
       llmConfigured: Boolean(LLM_API_KEY),
       llmModel: LLM_MODEL,
@@ -50,7 +57,6 @@ async function healthHandler(_req, res) {
     return res.status(500).json({
       status: "error",
       service: "medical-ai-backend",
-      aiMode: AI_MODE,
       llmProvider: LLM_PROVIDER,
       llmConfigured: Boolean(LLM_API_KEY),
       llmModel: LLM_MODEL,

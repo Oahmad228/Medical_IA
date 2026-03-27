@@ -40,6 +40,21 @@ function mapStoredAuthorToLLMRole(author) {
 }
 
 /**
+ * [Module: src/services/llmService.js] parseEmotionLevel
+ * Normalizes an emotion/indicator label into GREEN/ORANGE/RED.
+ */
+function parseEmotionLevel(raw) {
+  const text = String(raw || "").trim().toUpperCase();
+  if (text.includes("RED")) return "RED";
+  if (text.includes("ROUGE")) return "RED";
+  if (text.includes("ORANGE")) return "ORANGE";
+  if (text.includes("JAUNE")) return "ORANGE";
+  if (text.includes("GREEN")) return "GREEN";
+  if (text.includes("VERT")) return "GREEN";
+  return null;
+}
+
+/**
  * [Module: src/services/llmService.js] callLLM
  * Calls the LLM with a non-streaming request and returns the assistant text.
  */
@@ -373,9 +388,59 @@ async function generatePatientReportFromDoctor({
   return callLLM({ systemPrompt, userPrompt, temperature: 0.25, maxTokens: 520 });
 }
 
+/**
+ * [Module: src/services/llmService.js] evaluateCaseEmotionLevel
+ * Asks the LLM to rate the current case stress level (GREEN/ORANGE/RED).
+ */
+async function evaluateCaseEmotionLevel({ message, triageLevel, triageSummary, guidance, nextStep }) {
+  const systemPrompt =
+    "Tu es un module de classification du stress clinique. Tu lis un message patient et un resume de triage. " +
+    "Tu renvoies un seul mot: GREEN, ORANGE, ou RED. Aucun commentaire.";
+
+  const userPrompt = [
+    `Message patient:\n${String(message || "").trim()}`,
+    `Triage deterministe: ${triageLevel || "N/A"}`,
+    `Synthese triage: ${triageSummary || "N/A"}`,
+    `Conseil securite: ${guidance || "N/A"}`,
+    `Prochaine etape: ${nextStep || "N/A"}`,
+    "Instruction: renvoie uniquement GREEN, ORANGE, ou RED.",
+  ].join("\n\n");
+
+  const result = await callLLM({ systemPrompt, userPrompt, temperature: 0, maxTokens: 6 });
+  const parsed = parseEmotionLevel(result);
+  if (!parsed) {
+    throw new Error("Emotion level invalide");
+  }
+  return parsed;
+}
+
+/**
+ * [Module: src/services/llmService.js] evaluateReportEmotionLevel
+ * Asks the LLM to rate the recorded health report as GREEN/ORANGE/RED.
+ */
+async function evaluateReportEmotionLevel({ patientFinalText, triageLevel }) {
+  const systemPrompt =
+    "Tu es un module de classification. Tu lis un rapport medical patient et tu renvoies un seul mot: GREEN, ORANGE, ou RED. " +
+    "Aucune phrase. Aucun commentaire.";
+
+  const userPrompt = [
+    `Rapport patient:\n${String(patientFinalText || "").trim()}`,
+    `Triage initial (si connu): ${triageLevel || "N/A"}`,
+    "Instruction: renvoie uniquement GREEN, ORANGE, ou RED.",
+  ].join("\n\n");
+
+  const result = await callLLM({ systemPrompt, userPrompt, temperature: 0, maxTokens: 6 });
+  const parsed = parseEmotionLevel(result);
+  if (!parsed) {
+    throw new Error("Emotion level invalide");
+  }
+  return parsed;
+}
+
 module.exports = {
   extractAssistantText,
   mapStoredAuthorToLLMRole,
+  parseEmotionLevel,
   callLLM,
   callLLMStream,
   buildPatientAgentMessages,
@@ -383,4 +448,6 @@ module.exports = {
   generatePatientAssistantText,
   generateDoctorAssistantText,
   generatePatientReportFromDoctor,
+  evaluateCaseEmotionLevel,
+  evaluateReportEmotionLevel,
 };

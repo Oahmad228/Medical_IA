@@ -11,10 +11,8 @@ function loadEnv() {
 loadEnv();
 
 const PORT = Number(process.env.PORT || 3001);
-const AI_MODE = (process.env.AI_MODE || "mock").toLowerCase();
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
 const LLM_PROVIDER = (process.env.LLM_PROVIDER || "openrouter").toLowerCase();
 const LLM_API_KEY = process.env.LLM_API_KEY || "";
 const LLM_MODEL = process.env.LLM_MODEL || "meta-llama/llama-3.1-8b-instruct:free";
@@ -49,10 +47,8 @@ const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || "12mb";
 
 module.exports = {
   PORT,
-  AI_MODE,
   JWT_SECRET,
   JWT_EXPIRES_IN,
-  GOOGLE_MAPS_API_KEY,
   LLM_PROVIDER,
   LLM_API_KEY,
   LLM_MODEL,

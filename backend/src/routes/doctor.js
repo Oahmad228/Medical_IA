@@ -15,7 +15,7 @@ const { DOCTOR_PATIENT_OTP_MAX_ATTEMPTS } = require("../config/env");
 const { sendEmail } = require("../services/emailService");
 const { ensureDoctorHasActiveLink, getPatientForEmailString } = require("../services/patientService");
 const { ensureDraftReportExistsForDoctorPatient } = require("../services/conversationService");
-const { generatePatientReportFromDoctor } = require("../services/llmService");
+const { generatePatientReportFromDoctor, evaluateReportEmotionLevel } = require("../services/llmService");
 
 /**
  * [Module: src/routes/doctor.js] requestPatientLinkOtp
@@ -518,19 +518,30 @@ async function approveReport(req, res) {
 
     const doctorDraftText = parsed.data.editedDoctorDraftText || draft.doctorDraftText;
 
-    const patientFinalText = await generatePatientReportFromDoctor({
-      patient,
-      doctorDraftText,
-      triageLevel: draft.triageLevel,
-      triageSummary: draft.triageSummary,
-      guidance: draft.guidance,
-      nextStep: draft.nextStep,
-      specialist: draft.specialist,
-    }).catch(() => {
-      return `Votre medecin a valide un rapport. Niveau de vigilance: ${draft.triageLevel || "N/A"}. ${
-        draft.nextStep ? `Prochaines etapes: ${draft.nextStep}` : ""
-      }`;
-    });
+    let patientFinalText = "";
+    try {
+      patientFinalText = await generatePatientReportFromDoctor({
+        patient,
+        doctorDraftText,
+        triageLevel: draft.triageLevel,
+        triageSummary: draft.triageSummary,
+        guidance: draft.guidance,
+        nextStep: draft.nextStep,
+        specialist: draft.specialist,
+      });
+    } catch (_e) {
+      return res.status(502).json({ error: "Generation rapport IA indisponible." });
+    }
+
+    let emotionLevel = null;
+    try {
+      emotionLevel = await evaluateReportEmotionLevel({
+        patientFinalText,
+        triageLevel: draft.triageLevel,
+      });
+    } catch (_e) {
+      return res.status(502).json({ error: "Evaluation emotion IA indisponible." });
+    }
 
     const approvedAt = new Date();
     let status = "APPROVED";
@@ -553,6 +564,7 @@ async function approveReport(req, res) {
       data: {
         doctorDraftText,
         patientFinalText,
+        emotionLevel,
         approvedAt,
         sentAt,
         status,

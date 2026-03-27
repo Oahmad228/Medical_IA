@@ -1,9 +1,9 @@
 import React from "react";
-import { triageToChibiImagePrefix } from "../lib/utils";
+import { indicatorToChibiImagePrefix } from "../lib/utils";
 
-export default function ChibiStage({ assistant, triageLevel, message, hasReport, onOpenReport }) {
-  const sev = String(triageLevel || "GREEN").toLowerCase();
-  const prefix = triageToChibiImagePrefix(triageLevel);
+export default function ChibiStage({ assistant, indicatorLevel, message, hasReport, onOpenReport }) {
+  const sev = String(indicatorLevel || "GREEN").toLowerCase();
+  const prefix = indicatorToChibiImagePrefix(indicatorLevel);
   const imgSrc = `/chibi/${prefix}${assistant.subject}.png`;
 
   return (
@@ -14,7 +14,7 @@ export default function ChibiStage({ assistant, triageLevel, message, hasReport,
           <h2 className="chibi-stage__title">{assistant.label}</h2>
         </div>
         <span className={`chibi-stage__badge chibi-stage__badge--${sev}`}>
-          {String(triageLevel || "GREEN").toUpperCase()}
+          {String(indicatorLevel || "GREEN").toUpperCase()}
         </span>
       </div>
 

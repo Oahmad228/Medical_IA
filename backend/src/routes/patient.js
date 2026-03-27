@@ -3,10 +3,9 @@ const { z } = require("zod");
 const { prisma } = require("../db/prisma");
 const { authRequired, requireRole } = require("../middleware/auth");
 const { authLimiter } = require("../middleware/rateLimit");
-const { AI_MODE, GOOGLE_MAPS_API_KEY } = require("../config/env");
 const { sha256 } = require("../utils/crypto");
 const { issueOtpCode, otpExpiryDate, getOtpTtlMinutes } = require("../utils/otp");
-const { getMockDoctors, searchDoctorsFromGoogle } = require("../services/doctorSearchService");
+const { searchDoctorsFromOSM } = require("../services/doctorSearchService");
 const { sendEmail } = require("../services/emailService");
 
 /**
@@ -99,6 +98,7 @@ async function getLatestSymptomReport(req, res) {
       select: {
         id: true,
         triageLevel: true,
+        emotionLevel: true,
         triageSummary: true,
         guidance: true,
         nextStep: true,
@@ -177,7 +177,7 @@ async function getPatientDoctorLinkStatus(req, res) {
 
 /**
  * [Module: src/routes/patient.js] searchDoctors
- * Returns nearby doctors using Google Places or fallback data.
+ * Returns nearby doctors using OpenStreetMap (empty list if unavailable).
  */
 async function searchDoctors(req, res) {
   try {
@@ -200,17 +200,11 @@ async function searchDoctors(req, res) {
 
     let doctors = [];
     let usedGoogle = false;
-    if (AI_MODE === "live" && GOOGLE_MAPS_API_KEY) {
-      try {
-        doctors = await searchDoctorsFromGoogle({ specialist: finalSpecialist, near });
-        usedGoogle = true;
-      } catch (_e) {
-        doctors = [];
-      }
-    }
-
-    if (!doctors.length) {
-      doctors = getMockDoctors(finalSpecialist, near);
+    try {
+      doctors = await searchDoctorsFromOSM({ specialist: finalSpecialist, near });
+      usedGoogle = doctors.length > 0;
+    } catch (_e) {
+      doctors = [];
     }
 
     return res.json({ doctors, usedGoogle });
@@ -371,6 +365,7 @@ async function getLatestReport(req, res) {
         id: true,
         status: true,
         triageLevel: true,
+        emotionLevel: true,
         patientFinalText: true,
         approvedAt: true,
         sentAt: true,

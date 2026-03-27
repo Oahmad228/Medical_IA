@@ -20,6 +20,7 @@ export default function App() {
     handleForgotPassword,
     handleResetPassword,
     handleLogout,
+    handleSessionUpdate,
   } = useAuthFlow();
   const health = useHealthStatus();
 
@@ -44,7 +45,13 @@ export default function App() {
 
   return (
     <PageShell>
-      <RoleSwitch role={role} session={session} health={health} onLogout={handleLogout} />
+      <RoleSwitch
+        role={role}
+        session={session}
+        health={health}
+        onLogout={handleLogout}
+        onSessionUpdate={handleSessionUpdate}
+      />
     </PageShell>
   );
 }

@@ -1,9 +1,60 @@
+@media (max-width: 1400px) {
+  .chat-shell--patient {
+    grid-template-columns: minmax(180px, 220px) minmax(360px, 1fr) minmax(320px, 420px);
+  }
+
+  .chat-shell--doctor {
+    grid-template-columns: minmax(180px, 220px) minmax(360px, 1fr) minmax(280px, 320px);
+  }
+}
+
+@media (max-width: 1240px) {
+  .chat-shell--patient,
+  .chat-shell--doctor {
+    grid-template-columns: minmax(200px, 240px) minmax(360px, 1fr);
+    height: auto;
+    min-height: auto;
+  }
+
+  .stage-aside {
+    order: 3;
+    min-height: 320px;
+  }
+}
+
 @media (max-width: 1120px) {
   .chat-shell--patient,
   .chat-shell--doctor {
     grid-template-columns: 1fr;
     height: auto;
     min-height: auto;
+  }
+
+  .history-panel {
+    position: fixed;
+    left: 16px;
+    top: 90px;
+    bottom: 16px;
+    width: min(320px, 88vw);
+    transform: translateX(-120%);
+    transition: transform 0.2s ease;
+    z-index: 30;
+  }
+
+  .history-panel--open {
+    transform: translateX(0);
+  }
+
+  .history-toggle {
+    display: inline-flex;
+  }
+
+  .history-close {
+    display: inline-grid;
+  }
+
+  .appointment-thread {
+    grid-template-columns: 1fr;
   }
 
   .stage-aside {
@@ -41,5 +92,14 @@
   .topbar-actions {
     width: 100%;
     justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .topbar-actions-group {
+    flex-wrap: wrap;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
   }
 }

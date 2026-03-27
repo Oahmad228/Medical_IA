@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import TopBar from "../components/TopBar";
 
-export default function SuperAdminArea({ session, health, onLogout }) {
+export default function SuperAdminArea({ session, onLogout }) {
   const token = session.token;
   const [status, setStatus] = useState("PENDING");
   const [requests, setRequests] = useState([]);
@@ -44,9 +44,8 @@ export default function SuperAdminArea({ session, health, onLogout }) {
   return (
     <>
       <TopBar
-        title={`Bonjour ${session.user.fullName}`}
         subtitle="Espace Superadmin"
-        health={health}
+        userName={session.user.fullName}
         onLogout={onLogout}
       />
 

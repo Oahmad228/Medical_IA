@@ -97,6 +97,12 @@ export function useAuthFlow() {
     setSession(null);
   }
 
+  function handleSessionUpdate(nextSession) {
+    if (!nextSession) return;
+    setSession(nextSession);
+    persistSession(nextSession);
+  }
+
   return {
     session,
     role,
@@ -111,5 +117,6 @@ export function useAuthFlow() {
     handleForgotPassword,
     handleResetPassword,
     handleLogout,
+    handleSessionUpdate,
   };
 }

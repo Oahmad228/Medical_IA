@@ -8,7 +8,32 @@
   font-weight: 600;
 }
 
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.74rem;
+  color: color-mix(in oklab, var(--brand-deep), var(--ink) 10%);
+  font-weight: 800;
+}
+
 .muted {
   color: var(--muted);
   line-height: 1.5;
+}
+
+.form-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.field-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+button.danger {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  border: none;
+  color: #fff;
 }

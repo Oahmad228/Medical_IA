@@ -10,11 +10,11 @@
 }
 
 .chat-shell--patient {
-  grid-template-columns: minmax(240px, 280px) minmax(380px, 1fr) minmax(400px, 520px);
+  grid-template-columns: minmax(200px, 240px) minmax(420px, 1fr) minmax(360px, 460px);
 }
 
 .chat-shell--doctor {
-  grid-template-columns: minmax(240px, 280px) minmax(380px, 1fr) minmax(300px, 380px);
+  grid-template-columns: minmax(200px, 240px) minmax(420px, 1fr) minmax(300px, 360px);
 }
 
 .glass-panel {
@@ -35,11 +35,21 @@
   overflow: hidden;
 }
 
+.history-panel {
+  padding: 12px;
+}
+
 .panel-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+}
+
+.panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .history-panel {
@@ -48,27 +58,33 @@
 
 .history-list {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   overflow: auto;
   padding-right: 4px;
   min-height: 0;
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 
 .history-row {
   display: flex;
   align-items: stretch;
   gap: 6px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
   overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  min-height: 48px;
+}
+
+.history-row:hover {
+  background: rgba(15, 23, 42, 0.04);
 }
 
 .history-row--active {
-  border-color: color-mix(in oklab, var(--brand), transparent 55%);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand), transparent 82%);
-  background: rgba(255, 255, 255, 0.92);
+  border-color: color-mix(in oklab, var(--brand), transparent 60%);
+  background: rgba(13, 148, 136, 0.08);
 }
 
 .history-row__main {
@@ -77,7 +93,7 @@
   background: transparent;
   color: var(--ink);
   text-align: left;
-  padding: 12px 12px;
+  padding: 6px 10px;
   display: grid;
   gap: 4px;
   cursor: pointer;
@@ -85,25 +101,37 @@
 }
 
 .history-row__main strong {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .history-row__main span {
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: 0.66rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .history-row__delete {
-  width: 44px;
+  width: 36px;
   border: none;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
   display: grid;
   place-items: center;
-  border-left: 1px solid var(--line);
+  border-left: 1px solid transparent;
   transition: color 0.15s ease, background 0.15s ease;
+  opacity: 0;
+}
+
+.history-row:hover .history-row__delete,
+.history-row--active .history-row__delete {
+  opacity: 1;
 }
 
 .history-row__delete:hover {
@@ -189,6 +217,39 @@
 
 .panel-head--chat h2 {
   font-size: 1.15rem;
+}
+
+.history-toggle {
+  display: none;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--ink);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  width: auto;
+}
+
+.history-close {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--muted);
+  padding: 0;
+}
+
+.history-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 18, 34, 0.35);
+  border: none;
+  z-index: 20;
+  padding: 0;
+  border-radius: 0;
 }
 
 .chat-eyebrow {

@@ -1,7 +1,6 @@
 const { prisma } = require("../db/prisma");
-const { AI_MODE, LLM_API_KEY } = require("../config/env");
+const { LLM_API_KEY } = require("../config/env");
 const { callLLM, mapStoredAuthorToLLMRole, generateDoctorAssistantText } = require("./llmService");
-const { composeDoctorAssistantReply } = require("./assistantFallbackService");
 
 /**
  * [Module: src/services/conversationService.js] loadConversationHistoryForLLM
@@ -104,7 +103,7 @@ async function maybeRefreshConversationSummary(conversationId) {
 
 /**
  * [Module: src/services/conversationService.js] updatePatientMedicalMemory
- * Keeps a compact clinical memory per patient (LLM or deterministic fallback).
+ * Keeps a compact clinical memory per patient (LLM only).
  */
 async function updatePatientMedicalMemory({ patientId, newUserMessage, newAssistantMessage, triageLevel }) {
   const id = Number(patientId);
@@ -116,16 +115,7 @@ async function updatePatientMedicalMemory({ patientId, newUserMessage, newAssist
   });
   if (!patient) return;
 
-  if (AI_MODE !== "live" || !LLM_API_KEY) {
-    const stamp = new Date().toLocaleString();
-    const prev = patient.medicalMemory ? `${patient.medicalMemory}\n` : "";
-    const next = `${prev}- ${stamp} | triage=${triageLevel || "N/A"} | ${String(newUserMessage || "").trim()}`;
-    await prisma.patient.update({
-      where: { id },
-      data: { medicalMemory: next.slice(-8000), medicalMemoryUpdatedAt: new Date() },
-    });
-    return;
-  }
+  if (!LLM_API_KEY) return;
 
   const summarizerMessages = [
     {
@@ -134,6 +124,8 @@ async function updatePatientMedicalMemory({ patientId, newUserMessage, newAssist
         "Tu es la memoire clinique persistante d'un agent medical. Tu maintiens un 'rapport medical' compact et utile sur un patient. " +
         "Objectif: aider les futures conversations. " +
         "Contraintes: pas de diagnostic certain, pas de speculation inutile. " +
+        "N'inclus que des informations medicales (symptomes, traitements, antecedents, examens, signaux d'alerte). " +
+        "Ignore les details personnels non medicaux sauf si explicitement presents comme pertinents pour la sante. " +
         "Format STRICT en sections courtes:\n" +
         "1) Profil\n2) Antecedents/Contexte\n3) Symptomes recents (timeline)\n4) Triage et red flags\n5) Actions/Conseils donnes\n6) Questions ouvertes\n" +
         "Max 16 lignes. Pas de donnees privees inutiles.",
@@ -147,6 +139,7 @@ async function updatePatientMedicalMemory({ patientId, newUserMessage, newAssist
         `Nouvelle reponse assistant:\n${String(newAssistantMessage || "").trim()}`,
         `Triage associe: ${triageLevel || "N/A"}`,
         "Mets a jour la memoire (remplacer/ameliorer), sans repetition inutile.",
+        "Rappel: ne conserve que ce qui est medicalement pertinent.",
       ].join("\n\n"),
     },
   ];
@@ -223,7 +216,7 @@ async function ensureDraftReportExistsForDoctorPatient({ doctorUserId, patientId
       patientSpecialist: lastSymptom.specialist || null,
     });
   } catch (_e) {
-    doctorDraftText = composeDoctorAssistantReply({ triage: triageLevel, clinicalSummary, hypotheses });
+    return null;
   }
 
   await prisma.patientReport.create({

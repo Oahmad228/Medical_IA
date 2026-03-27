@@ -1,34 +1,19 @@
 const { prisma } = require("../../db/prisma");
-const {
-  AI_MODE,
-  GOOGLE_MAPS_API_KEY,
-  LLM_API_KEY,
-  LLM_MODEL,
-  LLM_VISION_MODEL,
-} = require("../../config/env");
+const { LLM_API_KEY, LLM_MODEL, LLM_VISION_MODEL } = require("../../config/env");
 const { detectTriage, recommendSpecialist } = require("../../utils/triage");
 const { normalizeAssistantPersona, assistantPersonaToStyle } = require("../../utils/persona");
 const { shouldUseVision, withVisionUserMessage } = require("../../utils/images");
-const { searchDoctorsFromGoogle } = require("../../services/doctorSearchService");
-const {
-  composePatientAssistantReply,
-  composeDoctorAssistantReply,
-} = require("../../services/assistantFallbackService");
+const { searchDoctorsFromOSM } = require("../../services/doctorSearchService");
 const {
   callLLMStream,
   buildPatientAgentMessages,
   buildDoctorAgentMessages,
   generatePatientAssistantText,
   generateDoctorAssistantText,
+  evaluateCaseEmotionLevel,
 } = require("../../services/llmService");
-const {
-  loadConversationHistoryForLLM,
-  updatePatientMedicalMemory,
-} = require("../../services/conversationService");
-const {
-  ensurePatientExists,
-  ensureDoctorHasActiveLink,
-} = require("../../services/patientService");
+const { loadConversationHistoryForLLM, updatePatientMedicalMemory } = require("../../services/conversationService");
+const { ensurePatientExists, ensureDoctorHasActiveLink } = require("../../services/patientService");
 
 /**
  * [Module: src/routes/chat/messageHandlers.js] extractPatientContext
@@ -70,20 +55,19 @@ function renderPatientContext(patientContext) {
 
 /**
  * [Module: src/routes/chat/messageHandlers.js] resolveDoctors
- * Looks up nearby doctors (Google Places when live, fallback otherwise).
+ * Looks up nearby doctors with Google Places (empty list if unavailable).
  */
 async function resolveDoctors({ location, specialist }) {
-  if (!location) return [];
-
-  if (AI_MODE === "live" && GOOGLE_MAPS_API_KEY) {
-    try {
-      return await searchDoctorsFromGoogle({ specialist, near: location });
-    } catch (_error) {
-      return [];
-    }
+  if (!location) {
+    return { doctors: [], usedGoogle: false };
   }
 
-  return [];
+  try {
+    const doctors = await searchDoctorsFromOSM({ specialist, near: location });
+    return { doctors, usedGoogle: doctors.length > 0 };
+  } catch (_error) {
+    return { doctors: [], usedGoogle: false };
+  }
 }
 
 /**
@@ -103,23 +87,24 @@ async function handlePatientMessage({
 }) {
   const triage = detectTriage(message);
   const specialist = recommendSpecialist(message);
-  const doctors = await resolveDoctors({ location, specialist });
+  const { doctors, usedGoogle } = await resolveDoctors({ location, specialist });
+  const emotionPromise = evaluateCaseEmotionLevel({
+    message,
+    triageLevel: triage.triage,
+    triageSummary: triage.summary,
+    guidance: triage.guidance,
+    nextStep: triage.nextStep,
+  }).catch(() => null);
 
   let assistantText = "";
-  let aiFallbackUsed = false;
   let patientContext = null;
+  let emotionLevel = null;
 
   try {
     const historyMessages = await loadConversationHistoryForLLM(conversationId, { limit: 18 });
     patientContext = extractPatientContext(conversation);
 
     if (streamRequested) {
-      if (AI_MODE !== "live") {
-        res.status(400).json({
-          error: "Streaming indisponible en mode mock. Activez AI_MODE=live.",
-        });
-        return { stop: true };
-      }
       if (!LLM_API_KEY) {
         res.status(400).json({
           error: "Streaming indisponible sans LLM_API_KEY. Configurez backend/.env.",
@@ -187,6 +172,10 @@ async function handlePatientMessage({
         },
       });
 
+      emotionLevel = await emotionPromise;
+      if (emotionLevel) {
+        res.write(`data: ${JSON.stringify({ type: "meta", emotionLevel })}\n\n`);
+      }
       res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
       res.end();
     } else {
@@ -199,26 +188,15 @@ async function handlePatientMessage({
         patientContext,
         imageInputs,
       });
+      emotionLevel = await emotionPromise;
     }
   } catch (error) {
-    aiFallbackUsed = true;
-    const reason = String(error?.message || "").includes("429")
-      ? "Quota/limite OpenRouter atteinte (HTTP 429)."
-      : "Service IA externe indisponible.";
-    assistantText = composePatientAssistantReply({
-      message,
-      triage,
-      specialist,
-      doctors,
-      patientPersona: patientContext?.assistantPersona,
-    });
-    assistantText += `\n\n[Info technique] ${reason} Reponse de secours activee.`;
-
     if (streamRequested && res.headersSent) {
-      res.write(`data: ${JSON.stringify({ type: "delta", delta: assistantText })}\n\n`);
-      res.write(`data: ${JSON.stringify({ type: "done", aiFallbackUsed: true })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "error", error: "Service IA indisponible." })}\n\n`);
       res.end();
+      return { stop: true };
     }
+    throw error;
   }
 
   const linkedPatientId =
@@ -236,13 +214,14 @@ async function handlePatientMessage({
       message,
       location: typeof location === "string" ? location.trim() : null,
       triageLevel: triage.triage,
+      emotionLevel: emotionLevel || null,
       triageSummary: triage.summary,
       guidance: triage.guidance,
       nextStep: triage.nextStep,
       specialist,
       doctorsJson: JSON.stringify(doctors),
-      aiMode: AI_MODE,
-      usedGooglePlace: AI_MODE === "live" && Boolean(GOOGLE_MAPS_API_KEY),
+      aiMode: "live",
+      usedGooglePlace: usedGoogle,
     },
   });
 
@@ -258,7 +237,7 @@ async function handlePatientMessage({
   return {
     assistantText,
     triageLevel: triage.triage,
-    aiFallbackUsed,
+    emotionLevel,
   };
 }
 
@@ -328,18 +307,11 @@ async function handleDoctorMessage({
         ];
 
   let assistantText = "";
-  let aiFallbackUsed = false;
 
   try {
     const historyMessages = await loadConversationHistoryForLLM(conversationId, { limit: 18 });
 
     if (streamRequested) {
-      if (AI_MODE !== "live") {
-        res.status(400).json({
-          error: "Streaming indisponible en mode mock. Activez AI_MODE=live.",
-        });
-        return { stop: true };
-      }
       if (!LLM_API_KEY) {
         res.status(400).json({
           error: "Streaming indisponible sans LLM_API_KEY. Configurez backend/.env.",
@@ -414,22 +386,12 @@ async function handleDoctorMessage({
       });
     }
   } catch (error) {
-    aiFallbackUsed = true;
-    const reason = String(error?.message || "").includes("429")
-      ? "Quota/limite OpenRouter atteinte (HTTP 429)."
-      : "Service IA externe indisponible.";
-    assistantText = composeDoctorAssistantReply({
-      triage: triageLevel,
-      clinicalSummary,
-      hypotheses,
-    });
-    assistantText += `\n\n[Info technique] ${reason} Reponse de secours activee.`;
-
     if (streamRequested && res.headersSent) {
-      res.write(`data: ${JSON.stringify({ type: "delta", delta: assistantText })}\n\n`);
-      res.write(`data: ${JSON.stringify({ type: "done", aiFallbackUsed: true })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "error", error: "Service IA indisponible." })}\n\n`);
       res.end();
+      return { stop: true };
     }
+    throw error;
   }
 
   await prisma.doctorAnalysis.create({
@@ -468,7 +430,7 @@ async function handleDoctorMessage({
     },
   });
 
-  return { assistantText, triageLevel, aiFallbackUsed };
+  return { assistantText, triageLevel };
 }
 
 module.exports = { handlePatientMessage, handleDoctorMessage };

@@ -288,7 +288,6 @@ Frontend Vite par défaut sur `http://localhost:5173`.
 Exemple minimal (OpenRouter) :
 
 ```dotenv
-AI_MODE=live
 DATABASE_URL="file:./dev.db"
 LLM_PROVIDER=openrouter
 LLM_API_KEY=sk-or-v1-...
@@ -298,8 +297,9 @@ APP_BASE_URL=http://localhost:5173
 
 Optionnel :
 
-- `GOOGLE_MAPS_API_KEY` (pour la recherche de médecins)
 - `SMTP_*` (pour verification email + reset password)
+
+La recherche de medecins utilise OpenStreetMap (Nominatim + Overpass) sans cle API.
 
 ---
 

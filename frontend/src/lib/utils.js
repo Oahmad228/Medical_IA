@@ -37,8 +37,8 @@ export function patientAssistantMeta(persona) {
   return { label: "Docteur", subject: "docter" };
 }
 
-export function triageToChibiImagePrefix(triage) {
-  const t = String(triage || "GREEN").toUpperCase();
+export function indicatorToChibiImagePrefix(level) {
+  const t = String(level || "GREEN").toUpperCase();
   // Tes assets suivent :
   //   GREEN   -> `Chibi_Calm_{subject}.png` (avec C majuscule)
   //   ORANGE  -> `chibi_jaune_{subject}.png`
