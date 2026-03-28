@@ -7,8 +7,8 @@ const { hashPassword, verifyPassword } = require("../utils/crypto");
 const { normalizeAssistantPersona } = require("../utils/persona");
 
 /**
- * [Module: src/routes/account.js] formatUserProfile
- * Normalizes user payloads for account settings responses.
+ * [Module: src/routes/account.js]
+ * Normalise les donnees de compte pour l'espace utilisateur.
  */
 function formatUserProfile(user) {
   if (!user) return null;
@@ -44,6 +44,7 @@ function formatUserProfile(user) {
             clinicCity: user.doctorProfile.clinicCity ?? null,
             clinicLat: user.doctorProfile.clinicLat ?? null,
             clinicLng: user.doctorProfile.clinicLng ?? null,
+            clinicHours: user.doctorProfile.clinicHours ?? null,
           }
         : null,
     };
@@ -53,8 +54,7 @@ function formatUserProfile(user) {
 }
 
 /**
- * [Module: src/routes/account.js] parseOptionalNumber
- * Converts optional number fields, returning null for empty strings.
+ * Convertit une valeur numerique optionnelle (null si vide).
  */
 function parseOptionalNumber(value) {
   if (value === undefined) return undefined;
@@ -66,8 +66,7 @@ function parseOptionalNumber(value) {
 }
 
 /**
- * [Module: src/routes/account.js] getMe
- * Returns the current user's profile details.
+ * Retourne le profil du compte connecte.
  */
 async function getMe(req, res) {
   try {
@@ -85,8 +84,7 @@ async function getMe(req, res) {
 }
 
 /**
- * [Module: src/routes/account.js] updateMe
- * Updates the current user's profile fields.
+ * Met a jour les champs du profil utilisateur.
  */
 async function updateMe(req, res) {
   try {
@@ -118,6 +116,7 @@ async function updateMe(req, res) {
       clinicCity: z.string().trim().max(120).optional(),
       clinicLat: z.union([z.number(), z.string().trim()]).optional(),
       clinicLng: z.union([z.number(), z.string().trim()]).optional(),
+      clinicHours: z.string().trim().max(400).optional(),
     });
 
     const parsed =
@@ -192,6 +191,10 @@ async function updateMe(req, res) {
         if (updates.clinicLng !== undefined) {
           doctorData.clinicLng = parseOptionalNumber(updates.clinicLng);
         }
+        if (updates.clinicHours !== undefined) {
+          const value = String(updates.clinicHours || "").trim();
+          doctorData.clinicHours = value ? value : null;
+        }
 
         if (Object.keys(doctorData).length > 0) {
           await tx.doctorProfile.update({ where: { id: user.doctorProfile.id }, data: doctorData });
@@ -212,8 +215,7 @@ async function updateMe(req, res) {
 }
 
 /**
- * [Module: src/routes/account.js] changePassword
-+ * Updates the current user's password after verifying the current one.
+ * Met a jour le mot de passe apres verification.
  */
 async function changePassword(req, res) {
   try {
@@ -247,8 +249,7 @@ async function changePassword(req, res) {
 }
 
 /**
- * [Module: src/routes/account.js] deleteMe
- * Deletes the current user's account and dependent data.
+ * Supprime le compte utilisateur et ses dependances.
  */
 async function deleteMe(req, res) {
   try {
@@ -301,8 +302,7 @@ async function deleteMe(req, res) {
 }
 
 /**
- * [Module: src/routes/account.js] createAccountRouter
- * Builds account management routes for authenticated users.
+ * Construit les routes de gestion du compte.
  */
 function createAccountRouter() {
   const router = express.Router();

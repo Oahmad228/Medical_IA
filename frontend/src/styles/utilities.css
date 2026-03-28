@@ -16,9 +16,70 @@
   font-weight: 800;
 }
 
+.card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--shadow-soft);
+  padding: 14px 16px;
+}
+
+.card--soft {
+  background: color-mix(in oklab, var(--paper), var(--bg) 6%);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-head__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.section-head__hint {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .muted {
   color: var(--muted);
   line-height: 1.5;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid transparent;
+}
+
+.status-pill--green {
+  background: color-mix(in oklab, var(--ok), white 92%);
+  color: color-mix(in oklab, var(--ok), black 20%);
+  border-color: color-mix(in oklab, var(--ok), white 65%);
+}
+
+.status-pill--orange {
+  background: color-mix(in oklab, var(--amber), white 90%);
+  color: color-mix(in oklab, var(--amber), black 18%);
+  border-color: color-mix(in oklab, var(--amber), white 60%);
+}
+
+.status-pill--red {
+  background: color-mix(in oklab, var(--warn), white 92%);
+  color: var(--warn);
+  border-color: color-mix(in oklab, var(--warn), white 65%);
 }
 
 .form-stack {
@@ -30,6 +91,16 @@
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modal-close {
+  width: auto;
 }
 
 button.danger {

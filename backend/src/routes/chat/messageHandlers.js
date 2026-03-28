@@ -257,33 +257,54 @@ async function handleDoctorMessage({
   const linkedPatientId =
     Number.isInteger(Number(patientId)) && Number(patientId) > 0 ? Number(patientId) : null;
 
-  if (!linkedPatientId) {
-    res.status(400).json({ error: "patientId requis pour l'analyse medecin (OTP obligatoire)." });
-    return { stop: true };
-  }
+  if (linkedPatientId) {
+    const patientExists = await ensurePatientExists(linkedPatientId);
+    if (!patientExists) {
+      res.status(404).json({ error: "Patient introuvable." });
+      return { stop: true };
+    }
 
-  const patientExists = await ensurePatientExists(linkedPatientId);
-  if (!patientExists) {
-    res.status(404).json({ error: "Patient introuvable." });
-    return { stop: true };
-  }
-
-  const hasLink = await ensureDoctorHasActiveLink({
-    doctorUserId: req.session.id,
-    patientId: linkedPatientId,
-  });
-  if (!hasLink) {
-    res.status(403).json({
-      error: "Patient non autorise pour ce medecin. Realisez l'association via OTP.",
+    const hasLink = await ensureDoctorHasActiveLink({
+      doctorUserId: req.session.id,
+      patientId: linkedPatientId,
     });
-    return { stop: true };
+    if (!hasLink) {
+      res.status(403).json({
+        error: "Patient non autorise pour ce medecin. Realisez l'association via OTP.",
+      });
+      return { stop: true };
+    }
   }
 
-  const lastPatientSymptom = await prisma.symptomReport.findFirst({
-    where: { patientId: linkedPatientId },
-    orderBy: { createdAt: "desc" },
-    select: { location: true, triageLevel: true, triageSummary: true, specialist: true },
-  });
+  const patientProfile = linkedPatientId
+    ? await prisma.patient.findUnique({
+        where: { id: linkedPatientId },
+        select: { fullName: true, age: true, sex: true, city: true, medicalMemory: true },
+      })
+    : null;
+
+  const latestReport = linkedPatientId
+    ? await prisma.patientReport.findFirst({
+        where: { patientId: linkedPatientId, doctorUserId: req.session.id },
+        orderBy: { createdAt: "desc" },
+        select: {
+          status: true,
+          triageLevel: true,
+          triageSummary: true,
+          doctorDraftText: true,
+          patientFinalText: true,
+          createdAt: true,
+        },
+      })
+    : null;
+
+  const lastPatientSymptom = linkedPatientId
+    ? await prisma.symptomReport.findFirst({
+        where: { patientId: linkedPatientId },
+        orderBy: { createdAt: "desc" },
+        select: { location: true, triageLevel: true, triageSummary: true, specialist: true },
+      })
+    : null;
 
   const triageResult = detectTriage(message);
   const triageLevel = triageResult.triage;
@@ -327,11 +348,33 @@ async function handleDoctorMessage({
       res.write(`data: ${JSON.stringify({ type: "meta", triageLevel })}\n\n`);
 
       const systemPrompt =
-        "Tu es l'Agent IA Medecin (assistant clinique). Conversation naturelle, concise, actionnable. " +
-        "Pas de certitude diagnostique. Mets en avant les red flags et les infos manquantes. " +
-        "Termine par 2-4 questions de clarification si necessaire.";
+        "Tu es l'Agent IA Medecin (assistant clinique). Tu parles comme un collegue senior: ton professionnel, direct et clair. " +
+        "Pas de certitude diagnostique, mais assume un cadre clinique plausible et propose un plan concret. " +
+        "Mets en avant les red flags, les points a verifier et les prochaines actions sans tourner autour du pot. " +
+        "Si on te demande un rapport/historique/dossier, reponds avec les elements disponibles du contexte. " +
+        "Style: paragraphes naturels, pas de Markdown, pas de titres ni de listes. " +
+        "Ne dis pas 'je n'ai pas d'informations'; si une info manque, formule-la comme une question courte a clarifier. " +
+        "Termine par 2-4 questions courtes si des infos manquent.";
+
+      const profileLine = patientProfile
+        ? `Patient: ${patientProfile.fullName || "N/A"} | age=${patientProfile.age ?? "N/A"} | sexe=${patientProfile.sex || "N/A"} | ville=${patientProfile.city || "N/A"}`
+        : "Patient: non lie";
+
+      const memoryLine = patientProfile?.medicalMemory
+        ? `Memoire clinique: ${String(patientProfile.medicalMemory).slice(0, 1200)}`
+        : "Memoire clinique: (vide)";
+
+      const reportMeta = latestReport
+        ? `Dernier rapport: ${latestReport.status} | triage=${latestReport.triageLevel || "N/A"} | ${latestReport.createdAt.toISOString()}`
+        : "Dernier rapport: (aucun)";
+
+      const reportText = latestReport?.patientFinalText || latestReport?.doctorDraftText || "";
 
       const clinicalContext = [
+        profileLine,
+        memoryLine,
+        reportMeta,
+        reportText ? `Rapport recent:\n${String(reportText).slice(0, 1200)}` : "",
         `Niveau de vigilance calcule: ${triageLevel}`,
         `Hypotheses preliminaires (regles): ${hypotheses.join(" | ")}`,
         `Localisation patient (dernier triage): ${lastPatientSymptom?.location || "N/A"}`,
@@ -342,8 +385,7 @@ async function handleDoctorMessage({
           lastPatientSymptom?.specialist || "N/A"
         }`,
         `Dernier message: ${message}`,
-        "Format prefere (court): Synthese / Hypotheses / A verifier / Message patient (simple).",
-      ].join("\n");
+      ].filter(Boolean).join("\n");
 
       const llmMessages = buildDoctorAgentMessages({
         systemPrompt,
@@ -383,6 +425,12 @@ async function handleDoctorMessage({
         patientTriageLevel: lastPatientSymptom?.triageLevel || null,
         patientTriageSummary: lastPatientSymptom?.triageSummary || null,
         patientSpecialist: lastPatientSymptom?.specialist || null,
+        patientProfile,
+        patientMedicalMemory: patientProfile?.medicalMemory || null,
+        lastReportMeta: latestReport
+          ? `${latestReport.status} | triage=${latestReport.triageLevel || "N/A"} | ${latestReport.createdAt.toISOString()}`
+          : null,
+        lastReportText: latestReport?.patientFinalText || latestReport?.doctorDraftText || null,
       });
     }
   } catch (error) {
@@ -394,41 +442,43 @@ async function handleDoctorMessage({
     throw error;
   }
 
-  await prisma.doctorAnalysis.create({
-    data: {
-      patientId: linkedPatientId,
-      doctorUserId: req.session.id,
-      patientProfile: linkedPatientId ? `Patient #${linkedPatientId}` : "Patient non specifie",
-      triageLevel,
-      symptoms: message,
-      medicalData: null,
-      clinicalSummary,
-      hypothesesJson: JSON.stringify(hypotheses),
-      patientFriendlyExplanation:
-        "Explication en langage simple a fournir au patient apres validation clinique.",
-    },
-  });
+  if (linkedPatientId) {
+    await prisma.doctorAnalysis.create({
+      data: {
+        patientId: linkedPatientId,
+        doctorUserId: req.session.id,
+        patientProfile: linkedPatientId ? `Patient #${linkedPatientId}` : "Patient non specifie",
+        triageLevel,
+        symptoms: message,
+        medicalData: null,
+        clinicalSummary,
+        hypothesesJson: JSON.stringify(hypotheses),
+        patientFriendlyExplanation:
+          "Explication en langage simple a fournir au patient apres validation clinique.",
+      },
+    });
 
-  updatePatientMedicalMemory({
-    patientId: linkedPatientId,
-    newUserMessage: message,
-    newAssistantMessage: assistantText,
-    triageLevel,
-  }).catch(() => {});
-
-  await prisma.patientReport.create({
-    data: {
+    updatePatientMedicalMemory({
       patientId: linkedPatientId,
-      doctorUserId: req.session.id,
-      status: "DRAFT",
+      newUserMessage: message,
+      newAssistantMessage: assistantText,
       triageLevel,
-      triageSummary,
-      guidance,
-      nextStep,
-      specialist,
-      doctorDraftText: assistantText,
-    },
-  });
+    }).catch(() => {});
+
+    await prisma.patientReport.create({
+      data: {
+        patientId: linkedPatientId,
+        doctorUserId: req.session.id,
+        status: "DRAFT",
+        triageLevel,
+        triageSummary,
+        guidance,
+        nextStep,
+        specialist,
+        doctorDraftText: assistantText,
+      },
+    });
+  }
 
   return { assistantText, triageLevel };
 }

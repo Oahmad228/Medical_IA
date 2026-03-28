@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export default function AuthPanel({
   onLogin,
@@ -12,16 +12,16 @@ export default function AuthPanel({
   error,
   info,
 }) {
-  const initialView = (() => {
-    const pathname = window.location.pathname.toLowerCase();
-    if (pathname.includes("/forgot-password")) return "forgot";
-    if (pathname.includes("/reset-password")) return "reset";
-    if (pathname.includes("/verify-email")) return "verify";
-    if (pathname.includes("/signup")) return "signup";
+  const getViewFromPath = (pathname) => {
+    const normalized = pathname.toLowerCase();
+    if (normalized.includes("/forgot-password")) return "forgot";
+    if (normalized.includes("/reset-password")) return "reset";
+    if (normalized.includes("/verify-email")) return "verify";
+    if (normalized.includes("/signup")) return "signup";
     return "login";
-  })();
+  };
 
-  const [view, setView] = useState(initialView);
+  const [view, setView] = useState(getViewFromPath(window.location.pathname));
   const [signupRole, setSignupRole] = useState("PATIENT");
   const [signupStep, setSignupStep] = useState("role");
 
@@ -50,15 +50,66 @@ export default function AuthPanel({
     bio: "",
   });
 
-  const [verifyEmail, setVerifyEmail] = useState("");
   const [verifyToken, setVerifyToken] = useState(
     new URLSearchParams(window.location.search).get("token") || ""
   );
+  const [verifyStatus, setVerifyStatus] = useState("idle");
+  const [verifyMessage, setVerifyMessage] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState("idle");
   const [resetToken, setResetToken] = useState(
     new URLSearchParams(window.location.search).get("token") || ""
   );
   const [resetPassword, setResetPassword] = useState("");
+  const [resetStatus, setResetStatus] = useState("idle");
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setView(getViewFromPath(window.location.pathname));
+      const token = new URLSearchParams(window.location.search).get("token") || "";
+      setVerifyToken(token);
+      setResetToken(token);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (view !== "verify") return;
+
+    if (!verifyToken) {
+      setVerifyStatus("error");
+      setVerifyMessage("Lien de verification invalide ou manquant.");
+      return;
+    }
+
+    setVerifyStatus("loading");
+    setVerifyMessage("");
+    onConfirmVerification({ token: verifyToken });
+  }, [view, verifyToken, onConfirmVerification]);
+
+  useEffect(() => {
+    if (view !== "verify") return;
+    if (!verifyToken || loading) return;
+
+    if (error) {
+      setVerifyStatus("error");
+      setVerifyMessage(error);
+      return;
+    }
+
+    if (info) {
+      setVerifyStatus("success");
+      setVerifyMessage(info);
+      return;
+    }
+
+    if (verifyStatus === "loading") {
+      setVerifyStatus("success");
+      setVerifyMessage("Email verifie.");
+    }
+  }, [view, verifyToken, loading, error, info, verifyStatus]);
 
   function goTo(nextView) {
     const targetPath =
@@ -76,26 +127,27 @@ export default function AuthPanel({
     const suffix =
       token && (nextView === "reset" || nextView === "verify") ? `?token=${token}` : "";
 
-    window.history.replaceState({}, "", `${targetPath}${suffix}`);
+    window.history.pushState({}, "", `${targetPath}${suffix}`);
     setView(nextView);
   }
 
   return (
     <main className="auth-shell">
-      <section className="auth-hero">
-        <p className="kicker">Double Agent System</p>
-        <h1>Plateforme medicale securisee</h1>
-        <p>
-          Connectez-vous a votre espace. Les comptes medecins sont verifies avant
-          activation, et les conversations sont historisees pour le suivi clinique.
-        </p>
-        {info ? <p className="info-text">{info}</p> : null}
-      </section>
+      <section className="auth-card auth-card--center">
+        <div className="auth-card__intro">
+          <p className="kicker">Double Agent System</p>
+          <h1>Plateforme medicale securisee</h1>
+          <p className="muted">
+            Acces rapide a votre espace patient, medecin ou admin.
+          </p>
+          {view === "login" && info ? <p className="info-text">{info}</p> : null}
+        </div>
 
-      <section className="auth-card">
+        <div className="auth-card__divider" role="presentation" />
+
         {view === "login" ? (
           <form
-            className="form-stack"
+            className="form-stack auth-form"
             onSubmit={async (event) => {
               event.preventDefault();
               await onLogin(loginForm);
@@ -146,20 +198,13 @@ export default function AuthPanel({
                 Mot de passe oublie ?
               </button>
             </div>
-
-            <p className="auth-footnote auth-footnote--secondary">
-              Email non verifie ?
-              <button type="button" className="inline-link" onClick={() => goTo("verify")}>
-                Verifier mon email
-              </button>
-            </p>
           </form>
         ) : null}
 
         {view === "signup" ? (
           <>
             {signupStep === "role" ? (
-              <div className="form-stack">
+              <div className="form-stack auth-form">
                 <h2>Creation de compte</h2>
                 <label>Je suis</label>
                 <select
@@ -179,7 +224,7 @@ export default function AuthPanel({
               </div>
             ) : (
               <form
-                className="form-stack"
+                className="form-stack auth-form"
                 onSubmit={async (event) => {
                   event.preventDefault();
                   if (signupRole === "PATIENT") {
@@ -360,56 +405,84 @@ export default function AuthPanel({
         ) : null}
 
         {view === "forgot" ? (
-          <form
-            className="form-stack"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              await onForgotPassword({ email: forgotEmail });
-            }}
-          >
-            <h2>Mot de passe oublie</h2>
-            <label>Email</label>
-            <input
-              type="email"
-              value={forgotEmail}
-              onChange={(e) => setForgotEmail(e.target.value)}
-              required
-            />
-            <button type="submit" disabled={loading}>
-              {loading ? "Envoi..." : "Envoyer le lien de reinitialisation"}
-            </button>
-            <p className="auth-footnote">
-              Retour a la connexion
-              <button type="button" className="inline-link" onClick={() => goTo("login")}>
-                Cliquez ici
+          forgotStatus === "sent" ? (
+            <div className="form-stack auth-form auth-confirm">
+              <h2>Lien envoye</h2>
+              <p className="muted">
+                Si cet email existe, un lien de reinitialisation a ete envoye.
+              </p>
+              <div className="auth-actions">
+                <button type="button" onClick={() => goTo("login")}>
+                  Retour a la connexion
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form
+              className="form-stack auth-form"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                await onForgotPassword({ email: forgotEmail });
+                setForgotStatus("sent");
+              }}
+            >
+              <h2>Mot de passe oublie</h2>
+              <label>Email</label>
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                required
+              />
+              <button type="submit" disabled={loading}>
+                {loading ? "Envoi..." : "Envoyer le lien de reinitialisation"}
               </button>
-            </p>
-          </form>
+              <p className="auth-footnote">
+                Retour a la connexion
+                <button type="button" className="inline-link" onClick={() => goTo("login")}>
+                  Cliquez ici
+                </button>
+              </p>
+            </form>
+          )
         ) : null}
 
         {view === "reset" ? (
           resetToken ? (
-            <form
-              className="form-stack"
-              onSubmit={async (event) => {
-                event.preventDefault();
-                await onResetPassword({ token: resetToken, newPassword: resetPassword });
-              }}
-            >
-              <h2>Modifier le mot de passe</h2>
-              <label>Nouveau mot de passe</label>
-              <input
-                type="password"
-                value={resetPassword}
-                onChange={(e) => setResetPassword(e.target.value)}
-                required
-              />
-              <button type="submit" disabled={loading}>
-                {loading ? "Validation..." : "Confirmer le nouveau mot de passe"}
-              </button>
-            </form>
+            resetStatus === "done" ? (
+              <div className="form-stack auth-form auth-confirm">
+                <h2>Mot de passe mis a jour</h2>
+                <p className="muted">Vous pouvez vous connecter avec votre nouveau mot de passe.</p>
+                <div className="auth-actions">
+                  <button type="button" onClick={() => goTo("login")}>
+                    Retour a la connexion
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form
+                className="form-stack auth-form"
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  await onResetPassword({ token: resetToken, newPassword: resetPassword });
+                  setResetStatus("done");
+                }}
+              >
+                <h2>Modifier le mot de passe</h2>
+                <label>Nouveau mot de passe</label>
+                <input
+                  type="password"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  required
+                />
+                <button type="submit" disabled={loading}>
+                  {loading ? "Validation..." : "Confirmer le nouveau mot de passe"}
+                </button>
+              </form>
+            )
           ) : (
-            <div className="form-stack">
+            <div className="form-stack auth-form">
               <h2>Lien invalide ou manquant</h2>
               <p className="muted">
                 Pour modifier votre mot de passe, utilisez le lien recu par email.
@@ -422,50 +495,29 @@ export default function AuthPanel({
         ) : null}
 
         {view === "verify" ? (
-          <form
-            className="form-stack"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              await onConfirmVerification({ token: verifyToken });
-            }}
-          >
+          <div className="form-stack auth-form auth-verify">
             <h2>Verification email</h2>
-            <label>Token de verification</label>
-            <input
-              value={verifyToken}
-              onChange={(e) => setVerifyToken(e.target.value)}
-              required
-            />
-            <button type="submit" disabled={loading}>
-              {loading ? "Verification..." : "Verifier mon email"}
-            </button>
+            {verifyStatus === "loading" ? (
+              <p className="muted">Verification en cours...</p>
+            ) : null}
 
-            <p className="muted">Vous n'avez pas recu d'email ?</p>
-            <input
-              type="email"
-              placeholder="Votre email"
-              value={verifyEmail}
-              onChange={(e) => setVerifyEmail(e.target.value)}
-            />
-            <button
-              type="button"
-              className="ghost"
-              disabled={loading || !verifyEmail.trim()}
-              onClick={async () => onRequestVerification({ email: verifyEmail })}
-            >
-              Renvoyer l'email de verification
-            </button>
+            {verifyStatus === "success" ? (
+              <p className="info-text">{verifyMessage || "Email verifie."}</p>
+            ) : null}
 
-            <p className="auth-footnote">
-              Retour a la connexion
-              <button type="button" className="inline-link" onClick={() => goTo("login")}>
-                Cliquez ici
+            {verifyStatus === "error" ? (
+              <p className="error-text">{verifyMessage || "Verification impossible."}</p>
+            ) : null}
+
+            <div className="auth-actions">
+              <button type="button" onClick={() => goTo("login")}>
+                Retour a la connexion
               </button>
-            </p>
-          </form>
+            </div>
+          </div>
         ) : null}
 
-        {error ? <p className="error-text">{error}</p> : null}
+        {view !== "verify" && error ? <p className="error-text">{error}</p> : null}
       </section>
     </main>
   );

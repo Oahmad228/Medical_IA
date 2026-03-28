@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 
 export default function TopBar({
   subtitle,
@@ -8,27 +8,6 @@ export default function TopBar({
   onOpenAppointments,
   showAppointments = false,
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClick = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
-    const handleKey = (event) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [menuOpen]);
-
   return (
     <header className="topbar">
       <div className="topbar-brand">
@@ -85,63 +64,27 @@ export default function TopBar({
             </button>
           ) : null}
           {typeof onOpenSettings === "function" ? (
-            <div className="topbar-menu" ref={menuRef}>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Parametres du compte"
-                onClick={() => setMenuOpen((prev) => !prev)}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M12 8.2a3.8 3.8 0 100 7.6 3.8 3.8 0 000-7.6z"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                  />
-                  <path
-                    d="M4 12l2.1-.4a6.8 6.8 0 011.1-2.6l-1.2-1.8 1.8-1.8 1.8 1.2a6.8 6.8 0 012.6-1.1L12 4l.4 2.1a6.8 6.8 0 012.6 1.1l1.8-1.2 1.8 1.8-1.2 1.8a6.8 6.8 0 011.1 2.6L20 12l-2.1.4a6.8 6.8 0 01-1.1 2.6l1.2 1.8-1.8 1.8-1.8-1.2a6.8 6.8 0 01-2.6 1.1L12 20l-.4-2.1a6.8 6.8 0 01-2.6-1.1l-1.8 1.2-1.8-1.8 1.2-1.8a6.8 6.8 0 01-1.1-2.6L4 12z"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-              {menuOpen ? (
-                <div className="topbar-menu-panel">
-                  <button
-                    type="button"
-                    className="topbar-menu-item"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenSettings?.("profile");
-                    }}
-                  >
-                    Modifier mes infos
-                  </button>
-                  <button
-                    type="button"
-                    className="topbar-menu-item"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenSettings?.("password");
-                    }}
-                  >
-                    Changer le mot de passe
-                  </button>
-                  <button
-                    type="button"
-                    className="topbar-menu-item danger"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenSettings?.("delete");
-                    }}
-                  >
-                    Supprimer mon compte
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Parametres du compte"
+              onClick={() => onOpenSettings?.("menu")}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M12 8.2a3.8 3.8 0 100 7.6 3.8 3.8 0 000-7.6z"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
+                <path
+                  d="M4 12l2.1-.4a6.8 6.8 0 011.1-2.6l-1.2-1.8 1.8-1.8 1.8 1.2a6.8 6.8 0 012.6-1.1L12 4l.4 2.1a6.8 6.8 0 012.6 1.1l1.8-1.2 1.8 1.8-1.2 1.8a6.8 6.8 0 011.1 2.6L20 12l-2.1.4a6.8 6.8 0 01-1.1 2.6l1.2 1.8-1.8 1.8-1.8-1.2a6.8 6.8 0 01-2.6 1.1L12 20l-.4-2.1a6.8 6.8 0 01-2.6-1.1l-1.8 1.2-1.8-1.8 1.2-1.8a6.8 6.8 0 01-1.1-2.6L4 12z"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           ) : null}
           <button className="ghost" type="button" onClick={onLogout}>
             Deconnexion

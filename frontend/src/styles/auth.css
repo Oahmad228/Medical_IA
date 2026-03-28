@@ -2,36 +2,116 @@
   position: relative;
   z-index: 2;
   max-width: 1180px;
-  margin: 14px auto;
+  margin: 0 auto;
+  min-height: calc(100vh - 140px - var(--footer-height, 0px));
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 16px;
-}
-
-.auth-hero,
-.auth-card,
-.panel {
-  border: 1px solid var(--line);
-  background: color-mix(in oklab, var(--paper), white 20%);
-  border-radius: 24px;
-  box-shadow: var(--shadow);
-}
-
-.auth-hero {
-  padding: 24px;
-  display: grid;
-  gap: 14px;
-}
-
-.auth-hero p {
-  line-height: 1.6;
-  color: var(--muted);
+  place-items: center;
+  padding: 28px 18px;
 }
 
 .auth-card {
-  padding: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
+  padding: 24px;
   display: grid;
-  gap: 14px;
+  gap: 16px;
+  width: min(520px, 92vw);
+  max-height: calc(100vh - 180px);
+  overflow: auto;
+}
+
+.auth-card--center {
+  justify-self: center;
+}
+
+.auth-card__intro {
+  display: grid;
+  gap: 8px;
+  text-align: center;
+}
+
+.auth-card__intro h1 {
+  font-size: 1.5rem;
+}
+
+.auth-card__divider {
+  height: 1px;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.auth-verify {
+  text-align: center;
+  gap: 10px;
+}
+
+.auth-confirm {
+  text-align: center;
+  gap: 12px;
+}
+
+.auth-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.auth-form {
+  animation: auth-fade 0.2s ease;
+}
+
+@keyframes auth-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-card input,
+.auth-card select,
+.auth-card textarea {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-card input:focus-visible,
+.auth-card select:focus-visible,
+.auth-card textarea:focus-visible {
+  outline: none;
+  border-color: color-mix(in oklab, var(--brand), white 30%);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand), transparent 82%);
+}
+
+.auth-card button {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+}
+
+.auth-card button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.16);
+}
+
+.auth-card button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14);
+}
+
+.auth-card button:disabled {
+  box-shadow: none;
+}
+
+.auth-card button.ghost {
+  box-shadow: none;
+}
+
+.auth-card button.ghost:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .auth-tabs {
@@ -52,11 +132,6 @@
   background: linear-gradient(135deg, var(--brand), var(--brand-deep));
   color: #fff;
   border: none;
-}
-
-.form-stack {
-  display: grid;
-  gap: 10px;
 }
 
 .auth-helper {

@@ -1,24 +1,24 @@
 :root {
-  --bg: #f4f6fb;
-  --bg-elevated: #ffffff;
+  --bg: #f3f5f9;
+  --bg-elevated: #f8fafc;
   --paper: #ffffff;
-  --ink: #0c1222;
-  --muted: #5c6578;
+  --ink: #0f172a;
+  --muted: #64748b;
   --line: rgba(15, 23, 42, 0.08);
-  --brand: #0d9488;
-  --brand-2: #6366f1;
-  --brand-deep: #0f766e;
-  --warn: #e11d48;
+  --brand: #2563eb;
+  --brand-2: #0ea5e9;
+  --brand-deep: #1e3a8a;
+  --warn: #dc2626;
   --amber: #f59e0b;
-  --ok: #10b981;
-  --shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
-  --shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.06);
-  --glass: rgba(255, 255, 255, 0.72);
-  --radius-xl: 24px;
-  --radius-lg: 18px;
+  --ok: #16a34a;
+  --shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+  --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --glass: rgba(255, 255, 255, 0.78);
+  --radius-xl: 26px;
+  --radius-lg: 20px;
   --radius-md: 14px;
   --radius-sm: 10px;
-  --focus: color-mix(in oklab, var(--brand), white 28%);
+  --focus: color-mix(in oklab, var(--brand), white 26%);
 }
 
 * {
@@ -27,13 +27,25 @@
 
 body {
   margin: 0;
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Manrope", "Sora", sans-serif;
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(13, 148, 136, 0.18), transparent 55%),
-    radial-gradient(900px 500px at 95% 0%, rgba(99, 102, 241, 0.16), transparent 50%),
-    radial-gradient(800px 400px at 50% 110%, rgba(14, 165, 233, 0.08), transparent 45%),
+    radial-gradient(900px 520px at 8% -10%, rgba(37, 99, 235, 0.18), transparent 55%),
+    radial-gradient(860px 520px at 96% 4%, rgba(14, 165, 233, 0.16), transparent 50%),
+    radial-gradient(900px 540px at 48% 110%, rgba(14, 165, 233, 0.08), transparent 52%),
+    repeating-linear-gradient(
+      120deg,
+      rgba(15, 23, 42, 0.03),
+      rgba(15, 23, 42, 0.03) 1px,
+      transparent 1px,
+      transparent 56px
+    ),
     var(--bg);
   color: var(--ink);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#root {
   min-height: 100vh;
 }
 
@@ -41,8 +53,8 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-family: "Outfit", "Plus Jakarta Sans", system-ui, sans-serif;
-  letter-spacing: -0.03em;
+  font-family: "Space Grotesk", "Manrope", sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .sr-only {
@@ -73,9 +85,9 @@ select,
 button {
   width: 100%;
   font: inherit;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--line);
-  padding: 10px 12px;
+  padding: 11px 12px;
 }
 
 input,
@@ -89,7 +101,7 @@ button {
   border: none;
   color: #fff;
   font-weight: 700;
-  background: linear-gradient(132deg, var(--brand), var(--brand-deep));
+  background: linear-gradient(132deg, var(--brand), var(--brand-2));
 }
 
 button:hover {
@@ -103,8 +115,8 @@ button:disabled {
 
 button.ghost {
   width: auto;
-  border: 1px solid #9bcab7;
-  color: #0a684e;
+  border: 1px solid color-mix(in oklab, var(--brand), white 55%);
+  color: var(--brand-deep);
   background: transparent;
 }
 

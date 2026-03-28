@@ -1,0 +1,102 @@
+.chibi-card {
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78));
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.chibi-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--brand), white 35%);
+  box-shadow: 0 12px 24px rgba(20, 23, 29, 0.1);
+}
+
+.chibi-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #edf6f2;
+  overflow: hidden;
+}
+
+.chibi-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chibi-text p {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.chibi-green .chibi-avatar {
+  animation: chibi-breathe 2.6s ease-in-out infinite;
+  background: color-mix(in oklab, var(--ok), white 82%);
+}
+
+.chibi-green {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--ok), white 94%) 0%, color-mix(in oklab, var(--ok), white 88%) 100%);
+  border-color: color-mix(in oklab, var(--ok), white 60%);
+}
+
+.chibi-orange .chibi-avatar {
+  animation: chibi-alert 1.4s ease-in-out infinite;
+  background: color-mix(in oklab, var(--amber), white 78%);
+}
+
+.chibi-orange {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--amber), white 94%) 0%, color-mix(in oklab, var(--amber), white 86%) 100%);
+  border-color: color-mix(in oklab, var(--amber), white 55%);
+}
+
+.chibi-red .chibi-avatar {
+  animation: chibi-urgent 0.7s ease-in-out infinite;
+  background: color-mix(in oklab, var(--warn), white 84%);
+}
+
+.chibi-red {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--warn), white 94%) 0%, color-mix(in oklab, var(--warn), white 88%) 100%);
+  border-color: color-mix(in oklab, var(--warn), white 60%);
+}
+
+@keyframes chibi-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes chibi-alert {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes chibi-urgent {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}

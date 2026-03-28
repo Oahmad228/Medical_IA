@@ -1,4 +1,5 @@
 import React from "react";
+import AppFooter from "../components/AppFooter";
 
 /**
  * [Module: src/app/PageShell.jsx] PageShell
@@ -9,7 +10,8 @@ export default function PageShell({ children }) {
     <div className="page-shell">
       <div className="bg-blob bg-blob-a" />
       <div className="bg-blob bg-blob-b" />
-      {children}
+      <div className="page-content">{children}</div>
+      <AppFooter />
     </div>
   );
 }

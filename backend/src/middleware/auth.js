@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET, JWT_EXPIRES_IN } = require("../config/env");
+const { prisma } = require("../db/prisma");
 
 /**
  * [Module: src/middleware/auth.js] issueSession
@@ -23,7 +24,7 @@ function issueSession(user) {
  * [Module: src/middleware/auth.js] authRequired
  * Express middleware that validates JWTs and attaches session data.
  */
-function authRequired(req, res, next) {
+async function authRequired(req, res, next) {
   const authHeader = req.headers.authorization || "";
   const [scheme, token] = authHeader.split(" ");
 
@@ -41,6 +42,17 @@ function authRequired(req, res, next) {
       status: payload.status,
     };
     req.token = token;
+    if (req.session.status === "BANNED") {
+      return res.status(403).json({ error: "Compte banni. Contactez l'administration." });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.session.id },
+      select: { status: true },
+    });
+    if (user?.status === "BANNED") {
+      return res.status(403).json({ error: "Compte banni. Contactez l'administration." });
+    }
     return next();
   } catch (_error) {
     return res.status(401).json({ error: "Token invalide ou expire." });

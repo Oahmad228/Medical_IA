@@ -1,48 +1,162 @@
 .page-shell {
   position: relative;
   min-height: 100vh;
-  padding: 22px;
+  height: 100vh;
+  padding: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  overflow: hidden;
+  --footer-height: 86px;
+}
+
+.page-content {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+.app-footer {
+  position: relative;
+  z-index: 5;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 0;
+  padding: 12px 18px;
+  display: grid;
+  gap: 6px;
+  height: var(--footer-height);
+  box-shadow: var(--shadow-soft);
+}
+
+.app-footer__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.app-footer__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-footer__mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--brand-deep);
+  display: grid;
+  place-items: center;
+}
+
+.app-footer__title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.app-footer__tagline {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.app-footer__links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.app-footer__links a {
+  color: var(--brand-deep);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.app-footer__links a:hover {
+  text-decoration: underline;
+}
+
+.app-footer__sep {
+  color: #cbd5f5;
+}
+
+.app-footer__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--muted);
 }
 
 .bg-blob {
   position: fixed;
-  width: 290px;
-  height: 290px;
+  width: 320px;
+  height: 320px;
   border-radius: 999px;
   filter: blur(60px);
   opacity: 0.45;
   pointer-events: none;
   z-index: 0;
+  animation: blob-float 14s ease-in-out infinite;
 }
 
 .bg-blob-a {
   left: -70px;
   top: -70px;
-  background: rgba(14, 165, 164, 0.55);
+  background: rgba(37, 99, 235, 0.45);
 }
 
 .bg-blob-b {
   right: -70px;
   bottom: -70px;
-  background: rgba(99, 102, 241, 0.4);
+  background: rgba(14, 165, 233, 0.32);
+}
+
+@keyframes blob-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
 }
 
 .topbar {
   position: relative;
   z-index: 10;
-  max-width: 1480px;
-  margin: 0 auto 18px;
-  background: var(--glass);
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.72));
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
+  border-radius: 0;
   box-shadow: var(--shadow-soft);
   padding: 18px 22px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  overflow: hidden;
+}
+
+.topbar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
 }
 
 .topbar-brand {
@@ -55,7 +169,7 @@
   width: 40px;
   height: 40px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.06);
+  background: linear-gradient(145deg, rgba(37, 99, 235, 0.2), rgba(14, 165, 233, 0.18));
   display: grid;
   place-items: center;
   color: #1f2937;
@@ -70,9 +184,17 @@
 }
 
 .topbar-subtitle {
-  color: var(--muted);
-  margin-top: 4px;
-  font-size: 0.95rem;
+  color: var(--brand-deep);
+  margin-top: 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  padding: 4px 10px;
+  border-radius: 999px;
 }
 
 .topbar-actions {
@@ -103,12 +225,11 @@
   height: 42px;
   border-radius: 14px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.86);
   color: var(--ink);
   display: grid;
   place-items: center;
   cursor: pointer;
-  padding: 0;
   padding: 0;
 }
 

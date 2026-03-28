@@ -182,8 +182,10 @@ async function getPatientDoctorLinkStatus(req, res) {
 async function searchDoctors(req, res) {
   try {
     const schema = z.object({
-      near: z.string().trim().min(2).max(250),
+      near: z.string().trim().min(2).max(250).optional(),
       specialist: z.string().trim().min(2).max(120).optional(),
+      lat: z.union([z.number(), z.string().trim()]).optional(),
+      lng: z.union([z.number(), z.string().trim()]).optional(),
     });
 
     const parsed = schema.safeParse({
@@ -195,12 +197,73 @@ async function searchDoctors(req, res) {
       return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
     }
 
-    const { near, specialist } = parsed.data;
+    const { near, specialist, lat, lng } = parsed.data;
     const finalSpecialist = specialist || "medecin generaliste";
+    const latitude = lat !== undefined ? Number(lat) : null;
+    const longitude = lng !== undefined ? Number(lng) : null;
+
+    const hasCoords = Number.isFinite(latitude) && Number.isFinite(longitude);
+
+    if (hasCoords) {
+      const rows = await prisma.user.findMany({
+        where: {
+          role: "DOCTOR",
+          status: "ACTIVE",
+          doctorProfile: {
+            isNot: null,
+            clinicLat: { not: null },
+            clinicLng: { not: null },
+          },
+        },
+        include: { doctorProfile: true },
+      });
+
+      const normalizedSpecialist = String(finalSpecialist || "").toLowerCase();
+      const filtered = rows.filter((row) => {
+        const specialty = String(row.doctorProfile?.specialty || "").toLowerCase();
+        return normalizedSpecialist ? specialty.includes(normalizedSpecialist) : true;
+      });
+
+      const toRad = (value) => (value * Math.PI) / 180;
+      const distanceKm = (lat1, lng1, lat2, lng2) => {
+        const r = 6371;
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return r * c;
+      };
+
+      const doctors = filtered
+        .map((row) => {
+          const profile = row.doctorProfile || {};
+          return {
+            userId: row.id,
+            name: row.fullName,
+            specialty: profile.specialty || null,
+            clinicName: profile.clinicName || null,
+            address: profile.clinicAddress || profile.clinicCity || "",
+            clinicCity: profile.clinicCity || null,
+            clinicLat: profile.clinicLat,
+            clinicLng: profile.clinicLng,
+            clinicHours: profile.clinicHours || null,
+            distanceKm: distanceKm(latitude, longitude, profile.clinicLat, profile.clinicLng),
+          };
+        })
+        .sort((a, b) => a.distanceKm - b.distanceKm)
+        .slice(0, 30);
+
+      return res.json({ doctors, usedGoogle: false });
+    }
 
     let doctors = [];
     let usedGoogle = false;
     try {
+      if (!near) {
+        return res.status(400).json({ error: "Localisation requise." });
+      }
       doctors = await searchDoctorsFromOSM({ specialist: finalSpecialist, near });
       usedGoogle = doctors.length > 0;
     } catch (_e) {
@@ -210,6 +273,69 @@ async function searchDoctors(req, res) {
     return res.json({ doctors, usedGoogle });
   } catch (error) {
     return res.status(500).json({ error: "Erreur patient/doctors/search", details: error.message });
+  }
+}
+
+/**
+ * [Module: src/routes/patient.js] suggestDoctors
+ * Returns doctors matching a name query for appointment suggestions.
+ */
+async function suggestDoctors(req, res) {
+  try {
+    const schema = z.object({
+      query: z.string().trim().min(2).max(120),
+      limit: z.union([z.number(), z.string().trim()]).optional(),
+    });
+
+    const parsed = schema.safeParse({
+      query: req.query.query,
+      limit: req.query.limit,
+    });
+
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Donnees invalides.", details: parsed.error.flatten() });
+    }
+
+    const limit = Math.min(Math.max(Number(parsed.data.limit || 10), 1), 20);
+
+    const doctors = await prisma.user.findMany({
+      where: {
+        role: "DOCTOR",
+        status: "ACTIVE",
+        fullName: { contains: parsed.data.query },
+      },
+      select: {
+        id: true,
+        fullName: true,
+        doctorProfile: {
+          select: {
+            specialty: true,
+            clinicLat: true,
+            clinicLng: true,
+            clinicName: true,
+            clinicAddress: true,
+            clinicCity: true,
+          },
+        },
+      },
+      orderBy: { fullName: "asc" },
+      take: Number.isFinite(limit) ? limit : 10,
+    });
+
+    return res.json({
+      doctors: doctors.map((row) => ({
+        userId: row.id,
+        fullName: row.fullName,
+        specialty: row.doctorProfile?.specialty || null,
+        clinicLat: row.doctorProfile?.clinicLat ?? null,
+        clinicLng: row.doctorProfile?.clinicLng ?? null,
+        clinicName: row.doctorProfile?.clinicName || null,
+        clinicAddress: row.doctorProfile?.clinicAddress || null,
+        clinicCity: row.doctorProfile?.clinicCity || null,
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Erreur patient/doctors/suggest", details: error.message });
   }
 }
 
@@ -262,7 +388,7 @@ async function requestConsultation(req, res) {
           role: "DOCTOR",
           status: "ACTIVE",
           doctorProfile: {
-            specialty: { contains: patientSpecialist, mode: "insensitive" },
+            specialty: { contains: patientSpecialist },
           },
         },
         include: { doctorProfile: true },
@@ -389,6 +515,7 @@ function createPatientRouter() {
   router.get("/patient/symptom-reports/latest", authRequired, requireRole("PATIENT"), getLatestSymptomReport);
   router.get("/patient/doctor-link/status", authRequired, requireRole("PATIENT"), getPatientDoctorLinkStatus);
   router.get("/patient/doctors/search", authRequired, requireRole("PATIENT"), searchDoctors);
+  router.get("/patient/doctors/suggest", authRequired, requireRole("PATIENT"), suggestDoctors);
   router.post(
     "/patient/consultation/request",
     authLimiter,

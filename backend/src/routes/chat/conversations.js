@@ -102,12 +102,7 @@ async function getConversationMessages(req, res) {
     }
 
     if (req.session.role === "DOCTOR" && !conversation.patientId) {
-      const existingCount = await prisma.chatMessage.count({ where: { conversationId } });
-      if (existingCount > 0) {
-        return res.status(403).json({
-          error: "Conversation non verrouillee. Creer une nouvelle conversation pour chaque patient.",
-        });
-      }
+      // Allow general (non-patient) doctor conversations.
     }
 
     if (req.session.role === "DOCTOR" && conversation.patientId) {

@@ -1,8 +1,95 @@
 .admin-shell {
   position: relative;
   z-index: 2;
-  max-width: 1060px;
+  max-width: 1160px;
   margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-panel {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.75));
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-head {
+  align-items: flex-start;
+}
+
+.admin-subtitle {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+}
+
+.admin-filter {
+  display: grid;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.admin-filter__select {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.92);
+  font: inherit;
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.admin-stat {
+  border-radius: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  display: grid;
+  gap: 6px;
+}
+
+.admin-stat__label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.admin-stat__value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.admin-stat--pending {
+  border-color: color-mix(in oklab, var(--amber), white 65%);
+  background: color-mix(in oklab, var(--amber), white 92%);
+}
+
+.admin-stat--active {
+  border-color: color-mix(in oklab, var(--ok), white 60%);
+  background: color-mix(in oklab, var(--ok), white 90%);
+}
+
+.admin-stat--rejected {
+  border-color: color-mix(in oklab, var(--warn), white 70%);
+  background: color-mix(in oklab, var(--warn), white 92%);
+}
+
+.admin-filter__select:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--brand), white 40%);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand), transparent 80%);
 }
 
 .requests-list {
@@ -13,13 +100,80 @@
 
 .request-card {
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #fff;
-  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+}
+
+.request-main {
+  display: grid;
+  gap: 8px;
+}
+
+.request-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.request-email {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.request-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px 16px;
+}
+
+.request-meta__label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  font-weight: 700;
+  display: block;
+}
+
+.request-meta__value {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.request-status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid transparent;
+}
+
+.request-status--pending {
+  background: color-mix(in oklab, var(--amber), white 88%);
+  color: color-mix(in oklab, var(--amber), black 20%);
+  border-color: color-mix(in oklab, var(--amber), white 60%);
+}
+
+.request-status--active {
+  background: color-mix(in oklab, var(--ok), white 86%);
+  color: color-mix(in oklab, var(--ok), black 20%);
+  border-color: color-mix(in oklab, var(--ok), white 55%);
+}
+
+.request-status--rejected {
+  background: color-mix(in oklab, var(--warn), white 90%);
+  color: var(--warn);
+  border-color: color-mix(in oklab, var(--warn), white 65%);
 }
 
 .request-card p {

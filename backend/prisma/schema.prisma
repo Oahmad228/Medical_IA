@@ -17,6 +17,7 @@ enum AccountStatus {
   ACTIVE
   PENDING
   REJECTED
+  BANNED
 }
 
 enum ConversationRole {
@@ -135,6 +136,7 @@ model DoctorProfile {
   clinicCity      String?
   clinicLat       Float?
   clinicLng       Float?
+  clinicHours     String?
   reviewedById    Int?
   reviewedBy      User?     @relation("DoctorReviewer", fields: [reviewedById], references: [id])
   approvalNote    String?

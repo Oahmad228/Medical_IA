@@ -19,6 +19,8 @@ export default function ChatLayout({
   onSend,
   sending,
   sendError,
+  chatFooter,
+  chatHeaderActions,
   rightPanel,
   stagePanel,
   imagePreviews,
@@ -27,8 +29,17 @@ export default function ChatLayout({
 }) {
   const fileInputRef = useRef(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyCollapsed, setHistoryCollapsed] = useState(false);
+  const [historyQuery, setHistoryQuery] = useState("");
   const isPatient = layoutVariant === "patient";
   const isDoctorMeta = composerMetaMode === "doctor";
+
+  const normalizedQuery = historyQuery.trim().toLowerCase();
+  const visibleConversations = normalizedQuery
+    ? conversations.filter((conversation) =>
+        String(conversation.title || "").toLowerCase().includes(normalizedQuery)
+      )
+    : conversations;
 
   const handleSelectConversation = async (id) => {
     setHistoryOpen(false);
@@ -36,7 +47,11 @@ export default function ChatLayout({
   };
 
   return (
-    <section className={`chat-shell ${isPatient ? "chat-shell--patient" : "chat-shell--doctor"}`}>
+    <section
+      className={`chat-shell ${isPatient ? "chat-shell--patient" : "chat-shell--doctor"} ${
+        historyCollapsed ? "chat-shell--collapsed" : ""
+      }`}
+    >
       {historyOpen ? (
         <button
           type="button"
@@ -46,43 +61,81 @@ export default function ChatLayout({
         />
       ) : null}
       <aside
-        className={`panel history-panel glass-panel ${historyOpen ? "history-panel--open" : ""}`}
+        className={`panel history-panel glass-panel ${historyOpen ? "history-panel--open" : ""} ${
+          historyCollapsed ? "history-panel--collapsed" : ""
+        }`}
       >
-        <div className="panel-head">
-          <h2>Conversations</h2>
-          <div className="panel-head-actions">
-            <button
-              type="button"
-              className="btn-pill"
-              onClick={async () => {
-                await onCreateConversation();
-                setHistoryOpen(false);
-              }}
-            >
-              + Nouveau
-            </button>
-            <button
-              type="button"
-              className="history-close"
-              aria-label="Fermer"
-              onClick={() => setHistoryOpen(false)}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <div className="history-top">
+          <button
+            type="button"
+            className="history-collapse"
+            aria-label={historyCollapsed ? "Afficher les conversations" : "Reduire les conversations"}
+            onClick={() => setHistoryCollapsed((prev) => !prev)}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 7h10M4 12h16M4 17h12"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          {!historyCollapsed ? <p className="history-title">Conversations</p> : null}
+          <button
+            type="button"
+            className="history-close"
+            aria-label="Fermer"
+            onClick={() => setHistoryOpen(false)}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M6 6l12 12M18 6l-12 12"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div className="history-actions">
+          <button
+            type="button"
+            className="history-action history-action--primary"
+            onClick={async () => {
+              await onCreateConversation();
+              setHistoryOpen(false);
+            }}
+          >
+            <span className="history-action__icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path
-                  d="M6 6l12 12M18 6l-12 12"
+                  d="M12 5v14M5 12h14"
                   stroke="currentColor"
                   strokeWidth="1.8"
                   strokeLinecap="round"
                 />
               </svg>
-            </button>
-          </div>
+            </span>
+            <span className="history-action__label">Nouveau chat</span>
+          </button>
+          <label className="history-search">
+            <span className="sr-only">Rechercher</span>
+            <input
+              type="search"
+              placeholder="Rechercher"
+              value={historyQuery}
+              onChange={(e) => setHistoryQuery(e.target.value)}
+            />
+          </label>
         </div>
+
         <div className="history-list">
-          {conversations.length === 0 ? (
+          {visibleConversations.length === 0 ? (
             <p className="muted">Aucune conversation.</p>
           ) : (
-            conversations.map((conversation) => (
+            visibleConversations.map((conversation) => (
               <div
                 key={conversation.id}
                 className={
@@ -123,21 +176,18 @@ export default function ChatLayout({
             ))
           )}
         </div>
+
       </aside>
 
       <main className="panel conversation-panel glass-panel">
         <div className="panel-head panel-head--chat">
-          <button
-            type="button"
-            className="history-toggle"
-            onClick={() => setHistoryOpen(true)}
-          >
-            Conversations
-          </button>
           <div>
             <p className="chat-eyebrow">Discussion</p>
             <h2>{role === "DOCTOR" ? "Assistant clinique" : "Assistant patient"}</h2>
           </div>
+          {chatHeaderActions ? (
+            <div className="panel-head__actions">{chatHeaderActions}</div>
+          ) : null}
         </div>
         <div className="chat-stream">
           {messages.length === 0 ? (
@@ -170,6 +220,8 @@ export default function ChatLayout({
             })
           )}
         </div>
+
+        {chatFooter ? <div className="chat-footer">{chatFooter}</div> : null}
 
         <form
           className="composer composer--modern"
@@ -280,7 +332,7 @@ export default function ChatLayout({
           ) : null}
           {isDoctorMeta ? (
             <p className="composer-meta-hint muted">
-              ID patient, OTP et validation du rapport : panneau de droite.
+              Historique patient : bouton Consulter historique. Rapport : bouton en haut a droite.
             </p>
           ) : showLocationInput ? (
             <p className="composer-meta-hint muted">

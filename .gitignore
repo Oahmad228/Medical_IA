@@ -9,6 +9,25 @@ node_modules/
 **/.env
 **/.env.*
 !**/.env.example
+.envrc
+.envrc.*
+
+# Secrets / credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+.npmrc
+.pypirc
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+prisma/dev.db
+backend/dev.db
 
 # Build outputs
 build/

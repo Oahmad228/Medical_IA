@@ -3,14 +3,7 @@ const cors = require("cors");
 const { JSON_BODY_LIMIT } = require("./config/env");
 const { createHealthRouter } = require("./routes/health");
 const { createAuthRouter } = require("./routes/auth");
-const {
-  createAccountRouter,
-  getMe,
-  updateMe,
-  changePassword,
-  deleteMe,
-} = require("./routes/account");
-const { authRequired } = require("./middleware/auth");
+const { createAccountRouter } = require("./routes/account");
 const { createAdminRouter } = require("./routes/admin");
 const { createChatRouter } = require("./routes/chat");
 const { createPatientRouter } = require("./routes/patient");
@@ -30,10 +23,6 @@ function createApp() {
   app.use(createHealthRouter());
   app.use("/auth", createAuthRouter());
   app.use("/auth", createAccountRouter());
-  app.get("/auth/me", authRequired, getMe);
-  app.patch("/auth/me", authRequired, updateMe);
-  app.post("/auth/me/change-password", authRequired, changePassword);
-  app.delete("/auth/me", authRequired, deleteMe);
   app.use("/admin", createAdminRouter());
   app.use("/chat", createChatRouter());
   app.use(createPatientRouter());

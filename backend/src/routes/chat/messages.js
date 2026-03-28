@@ -51,16 +51,16 @@ async function applyDoctorConversationLock({
     return true;
   }
 
+  if (!linkedPatientId) {
+    // General doctor conversation (no patient link).
+    return true;
+  }
+
   const existingCount = await prisma.chatMessage.count({ where: { conversationId } });
   if (existingCount > 0) {
     res.status(403).json({
       error: "Conversation non verrouillee et deja utilisee. Creer une nouvelle conversation pour ce patient.",
     });
-    return false;
-  }
-
-  if (!linkedPatientId) {
-    res.status(400).json({ error: "patientId requis pour analyse medecin (OTP obligatoire)." });
     return false;
   }
 
