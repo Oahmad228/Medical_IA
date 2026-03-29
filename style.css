@@ -1,0 +1,191 @@
+/* AppFlowy-inspired Professional Design */
+
+:root {
+    --app-primary: #5E5ADB; /* AppFlowy Indigo */
+    --app-primary-light: #EBEBFF;
+    --app-secondary: #8280FF;
+    --app-bg: #F9FAFB;
+    --app-white: #FFFFFF;
+    --app-text: #1F2937;
+    --app-text-muted: #6B7280;
+    --app-border: #E5E7EB;
+    --app-radius: 12px;
+    --app-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --app-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--app-bg);
+    color: var(--app-text);
+    line-height: 1.5;
+}
+
+/* Sidebar-style Nav (Workspace vibe) */
+.workspace-nav {
+    background-color: var(--app-white);
+    border-bottom: 1px solid var(--app-border);
+    padding: 0.75rem 1.5rem;
+}
+
+.nav-item {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+    font-weight: 500;
+}
+
+.nav-item:hover {
+    background-color: var(--app-primary-light);
+    color: var(--app-primary);
+}
+
+/* Minimal Workspace Cards */
+.workspace-card {
+    background: var(--app-white);
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius);
+    padding: 1.5rem;
+    transition: all 0.25s ease;
+    box-shadow: var(--app-shadow);
+}
+
+.workspace-card:hover {
+    box-shadow: var(--app-shadow-lg);
+    border-color: var(--app-primary);
+    transform: translateY(-2px);
+}
+
+/* AppFlowy-style Header */
+.section-header {
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.section-header h2 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--app-text);
+    margin-bottom: 1rem;
+}
+
+.section-header p {
+    color: var(--app-text-muted);
+    font-size: 1.125rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Buttons */
+.app-btn-primary {
+    background-color: var(--app-primary);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: background 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.app-btn-primary:hover {
+    background-color: #4C48B7;
+}
+
+.app-btn-outline {
+    border: 1px solid var(--app-border);
+    color: var(--app-text);
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.app-btn-outline:hover {
+    background-color: #F3F4F6;
+    border-color: #D1D5DB;
+}
+
+/* Profile Avatar Wrapper */
+.avatar-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    overflow: hidden;
+    background-color: var(--app-primary-light);
+    margin-bottom: 1.25rem;
+}
+
+/* Modal Styling (Workspace feel) */
+.modal-overlay {
+    background: rgba(17, 24, 39, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+.modal-workspace {
+    background: var(--app-white);
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--app-border);
+}
+
+.modal-header-app {
+    border-bottom: 1px solid var(--app-border);
+    padding: 1.5rem 2rem;
+}
+
+.modal-body-app {
+    padding: 2rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+/* Heartbeat and Pulse effects */
+@keyframes app-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.app-logo-pulse {
+    animation: app-pulse 2s infinite ease-in-out;
+}
+
+/* Task Modal Specifics */
+#task-modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+input[type="range"] {
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #EBEBFF;
+    border-radius: 5px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--app-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#gantt-container {
+    min-height: 250px;
+}

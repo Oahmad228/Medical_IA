@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEDICAL AI</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="antialiased">
+
+    <!-- Workspace Navigation -->
+    <nav class="sticky top-0 z-50 workspace-nav flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <!-- Logos Écoles -->
+            <div class="flex items-center space-x-3 border-r border-gray-200 pr-4 mr-2">
+                <img src="hightech.png" alt="High-Tech" class="h-8 w-auto object-contain">
+                <img src="Lyoun 1.png" alt="Université Lyon 1" class="h-8 w-auto object-contain">
+                <!-- Fallback icons if images are missing -->
+                <div class="flex items-center space-x-2 app-logo-pulse school-icons-fallback hidden">
+                    <i class="fas fa-graduation-cap text-[#5E5ADB] text-xl"></i>
+                    <i class="fas fa-university text-gray-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 app-logo-pulse">
+                <i class="fas fa-brain text-[#5E5ADB] text-2xl"></i>
+                <i class="fas fa-heart-pulse text-rose-500 text-2xl"></i>
+            </div>
+            <span class="font-extrabold text-xl tracking-tight text-gray-900">MEDICAL AI</span>
+        </div>
+        
+        <div class="hidden md:flex items-center space-x-2">
+            <a href="#home" class="nav-item text-gray-600 text-sm">Vue d'ensemble</a>
+            <a href="#team" class="nav-item text-gray-600 text-sm">Équipe projet</a>
+            <a href="#timeline" class="nav-item text-gray-600 text-sm">Planning</a>
+        </div>
+    </nav>
+
+    <!-- Hero / Workspace Dashboard -->
+    <section id="home" class="pt-24 pb-32 px-4 md:px-8 max-w-4xl mx-auto text-center">
+        <div class="animate-fade-in">
+            <h1 class="text-5xl md:text-7xl font-black text-gray-900 mb-8 leading-tight">
+                Optimisez la Santé avec <br><span class="text-[#5E5ADB]">MEDICAL AI</span>
+            </h1>
+            <p class="text-xl text-gray-500 mb-12 leading-relaxed mx-auto max-w-2xl">
+                Bienvenue dans l'espace de travail collaboratif de <span class="text-[#5E5ADB] font-bold">MEDICAL AI</span>. Notre plateforme connecte patients et médecins via une assistance IA fiable pour un parcours santé optimisé.
+            </p>
+           
+            <div class="flex justify-center gap-4">
+                <a href="#team" class="app-btn-primary px-10 py-4 text-lg">
+                    <i class="fas fa-users"></i>
+                    Voir l'équipe
+                </a>
+            </div>
+
+            <!-- Photo de réunion de l'équipe -->
+            <div class="team-image mt-16 animate-fade-in">
+                <img src="reunion.jpeg" alt="Réunion de l'équipe MEDICAL AI" onerror="this.src='https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80'; this.alt='Photo de réunion (Image par défaut)';">
+            </div>
+        </div>
+    </section>
+
+    <!-- Team / Workspace Members -->
+    <section id="team" class="py-20 bg-white border-y border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 md:px-8">
+            <div class="section-header">
+                <h2>Membres de l'Espace</h2>
+                <p>Retrouvez ici les contributeurs clés qui façonnent l'avenir de MEDICAL AI à travers leurs expertises respectives.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Team Member 1: Israe Benboujema -->
+                <div class="workspace-card team-card cursor-pointer group"
+                     data-name="Israe Benboujema"
+                     data-role="Chef de Projet"
+                     data-tasks="Planification des sprints Agile;Gestion du backlog produit;Coordination de l'équipe;Veille au respect des délais;Communication avec les parties prenantes">
+                    <div class="avatar-wrapper">
+                        <!-- Vraie image d'Israe Benboujema -->
+                        <img src="israe.jpeg" 
+                             alt="Israe Benboujema" 
+                             class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300">
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">Israe Benboujema</h3>
+                    <p class="text-[#5E5ADB] text-xs font-bold uppercase tracking-wider mb-3">Chef de Projet</p>
+                    <p class="text-sm text-gray-500 mb-6 leading-relaxed">
+                        Israe coordonne l'ensemble du projet, assurant la cohésion de l'équipe et le respect de la vision stratégique de MEDICAL AI.
+                    </p>
+                    <div class="flex items-center space-x-3 text-gray-400 group-hover:text-[#5E5ADB] transition-colors">
+                    
+                        <span class="text-xs font-medium ml-auto">Voir la contribution <i class="fas fa-chevron-right ml-1"></i></span>
+                    </div>
+                </div>
+
+                <!-- Team Member 2: AmineAhmed Ouerdraogo -->
+                <div class="workspace-card team-card cursor-pointer group"
+                     data-name="AmineAhmed Ouerdraogo"
+                     data-role="Développeur en Chef"
+                     data-tasks="Architecture système;Développement Backend & API;Optimisation des algorithmes IA;Gestion de la base de données;Déploiement technique">
+                    <div class="avatar-wrapper">
+                        <!-- Vraie image d'AmineAhmad Ouerdraogo -->
+                        <img src="ahmed amine .jpeg" 
+                             alt="AmineAhmad Ouerdraogo" 
+                             class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300">
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">AmineAhmed Ouerdraogo</h3>
+                    <p class="text-[#5E5ADB] text-xs font-bold uppercase tracking-wider mb-3">Développeur en Chef</p>
+                    <p class="text-sm text-gray-500 mb-6 leading-relaxed">
+                        Expert technique, Amine orchestre l'architecture et le développement des solutions technologiques avancées.
+                    </p>
+                    <div class="flex items-center space-x-3 text-gray-400 group-hover:text-[#5E5ADB] transition-colors">
+                    
+                        <span class="text-xs font-medium ml-auto">Voir la contribution <i class="fas fa-chevron-right ml-1"></i></span>
+                    </div>
+                </div>
+
+                <!-- Team Member 3: Fadwa Es-sahli -->
+                <div class="workspace-card team-card cursor-pointer group" 
+                     data-name="Fadwa Es-sahli" 
+                     data-role="Communication Manager" 
+                     data-tasks="Stratégie de communication;Gestion de l'image de marque;Relations publiques;Présentation du projet;Design visuel">
+                    <div class="avatar-wrapper">
+                        <!-- Vraie image de Fadwa Es-sahli -->
+                        <img src="fadwa.jpeg" 
+                             alt="Fadwa Es-sahli" 
+                             class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300">
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">Fadwa Es-sahli</h3>
+                    <p class="text-[#5E5ADB] text-xs font-bold uppercase tracking-wider mb-3">Communication Manager</p>
+                    <p class="text-sm text-gray-500 mb-6 leading-relaxed">
+                        Fadwa pilote la communication et l'identité visuelle pour assurer un impact maximal du projet MEDICAL AI.
+                    </p>
+                    <div class="flex items-center space-x-3 text-gray-400 group-hover:text-[#5E5ADB] transition-colors">
+                    
+                        <span class="text-xs font-medium ml-auto">Voir la contribution <i class="fas fa-chevron-right ml-1"></i></span>
+                    </div>
+                </div>
+
+                <!-- Team Member 4: Fatoumata Diaraye Barry -->
+                <div class="workspace-card team-card cursor-pointer group"
+                     data-name="Fatoumata Diaraye Barry"
+                     data-role="Rédacteur Technique"
+                     data-tasks="Documentation technique;Rédaction des rapports;Synthèse des KPIs;Gestion des livrables;Cahier des charges">
+                    <div class="avatar-wrapper">
+                        <!-- Vraie image de Fatoumata Diaraye Barry -->
+                        <img src="fatomata.jpeg" 
+                             alt="Fatoumata Diaraye Barry" 
+                             class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300">
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">Fatoumata Diaraye Barry</h3>
+                    <p class="text-[#5E5ADB] text-xs font-bold uppercase tracking-wider mb-3">Rédacteur Technique</p>
+                    <p class="text-sm text-gray-500 mb-6 leading-relaxed">
+                        Fatoumata assure la clarté et la précision de toute la documentation technique et des rapports de MEDICAL AI.
+                    </p>
+                    <div class="flex items-center space-x-3 text-gray-400 group-hover:text-[#5E5ADB] transition-colors">
+                    
+                        <span class="text-xs font-medium ml-auto">Voir la contribution  <i class="fas fa-chevron-right ml-1"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project Timeline / Gantt Chart -->
+    <section id="timeline" class="py-20 bg-[#F9FAFB]">
+        <div class="max-w-7xl mx-auto px-4 md:px-8">
+            <div class="section-header">
+                <h2>Planning du Projet</h2>
+                <p>Suivi en temps réel de l'avancement des tâches assignées à l'équipe (Mode lecture seule).</p>
+            </div>
+            
+            <div class="workspace-card p-6 overflow-hidden mb-12">
+                <div class="flex items-center space-x-4 mb-8">
+                    <div class="h-10 w-10 rounded-lg bg-[#EBEBFF] flex items-center justify-center text-[#5E5ADB]">
+                        <i class="fas fa-table text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">Résumé Stratégique (12 Semaines)</h3>
+                        <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Vue d'ensemble des phases du projet</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-100">
+                                <th class="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest">Phase</th>
+                                <th class="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest">Tâche</th>
+                                <th class="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest">Responsable</th>
+                                <th class="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">S1-3</th>
+                                <th class="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">S4-6</th>
+                                <th class="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">S7-9</th>
+                                <th class="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">S10-12</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            <!-- Phase Analyse -->
+                            <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                <td class="px-4 py-4 font-bold text-gray-900" rowspan="2">Analyse</td>
+                                <td class="px-4 py-4 text-gray-600">Étude de faisabilité et Cahier des charges</td>
+                                <td class="px-4 py-4 text-[#5E5ADB] font-medium">Chef de projet (Israe)</td>
+                                <td class="px-4 py-4 text-center text-[#5E5ADB] tracking-tighter">████████</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                            </tr>
+                            <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                <td class="px-4 py-4 text-gray-600">Architecture technique et Modélisation IA</td>
+                                <td class="px-4 py-4 text-[#5E5ADB] font-medium">Backend (Amine)</td>
+                                <td class="px-4 py-4 text-center text-[#5E5ADB] tracking-tighter">████████</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                            </tr>
+                            
+                            <!-- Phase Développement -->
+                            <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                <td class="px-4 py-4 font-bold text-gray-900" rowspan="2">Développement</td>
+                                <td class="px-4 py-4 text-gray-600">Développement des APIs et Logique IA</td>
+                                <td class="px-4 py-4 text-[#5E5ADB] font-medium">Backend (Amine)</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-[#5E5ADB] tracking-tighter">████████</td>
+                                <td class="px-4 py-4 text-center text-[#5E5ADB] tracking-tighter">██████</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                            </tr>
+                            <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                <td class="px-4 py-4 text-gray-600">Interface Workspace et Intégration UX</td>
+                                <td class="px-4 py-4 text-[#5E5ADB] font-medium">Frontend (Fadwa)</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-[#5E5ADB] tracking-tighter">████████</td>
+                                <td class="px-4 py-4 text-center text-[#5E5ADB] tracking-tighter">██████</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                            </tr>
+
+                            <!-- Phase Test -->
+                            <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                <td class="px-4 py-4 font-bold text-gray-900">Test</td>
+                                <td class="px-4 py-4 text-gray-600">Tests unitaires et Validation des données</td>
+                                <td class="px-4 py-4 text-[#5E5ADB] font-medium">Testeur (Fadwa)</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-[#5E5ADB] tracking-tighter">████████</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                            </tr>
+
+                            <!-- Phase Finalisation -->
+                            <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                <td class="px-4 py-4 font-bold text-gray-900" rowspan="2">Finalisation</td>
+                                <td class="px-4 py-4 text-gray-600">Rédaction des rapports et KPI</td>
+                                <td class="px-4 py-4 text-[#5E5ADB] font-medium">Responsable rapport (Fatoumata)</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-[#5E5ADB] tracking-tighter">████████</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="px-4 py-4 text-gray-600">Déploiement et Revue finale</td>
+                                <td class="px-4 py-4 text-[#5E5ADB] font-medium">Chef de projet (Israe)</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-gray-200">------</td>
+                                <td class="px-4 py-4 text-center text-[#5E5ADB] tracking-tighter">████████</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+    </section>
+
+    <!-- Modal for Member Details (AppFlowy Style) -->
+    <div id="member-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 modal-overlay">
+        <div class="modal-workspace max-w-xl w-full overflow-hidden transform transition-all scale-95 opacity-0 duration-200" id="modal-content">
+            <div class="modal-header-app flex justify-between items-center bg-gray-50">
+                <div class="flex items-center space-x-3">
+                    <div class="h-10 w-10 rounded-lg bg-[#EBEBFF] flex items-center justify-center text-[#5E5ADB]">
+                        <i class="fas fa-user-circle text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 id="modal-name" class="text-xl font-bold text-gray-900">Nom du Membre</h3>
+                        <p id="modal-role" class="text-xs font-bold text-[#5E5ADB] uppercase tracking-wider">Rôle</p>
+                    </div>
+                </div>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-200 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="modal-body-app">
+                <h4 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Réalisations sur le projet</h4>
+                <ul id="modal-tasks" class="space-y-4">
+                    <!-- Tasks will be injected here -->
+                </ul>
+                <div class="mt-10 flex justify-end">
+                    <button id="close-modal-btn" class="app-btn-outline py-2 px-6 text-sm">
+                        Fermer le workspace
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center text-gray-400 text-xs font-medium">
+            <div class="flex items-center space-x-2 mb-6 md:mb-0">
+                <i class="fas fa-brain text-[#5E5ADB]"></i>
+                <span class="text-gray-900 font-bold uppercase tracking-widest">MEDICAL AI</span>
+            </div>
+            <p>&copy; 2026 MEDICAL AI Lab. Built for open collaboration.</p>
+            <div class="flex space-x-6 mt-6 md:mt-0">
+                <a href="#" class="hover:text-gray-600">Documentation</a>
+                <a href="#" class="hover:text-gray-600">Confidentialité</a>
+                <a href="#" class="hover:text-gray-600">Github</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
