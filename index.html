@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical AI – Dual Agent System | Projet Académique</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#home"><i class="fas fa-microscope"></i> <span class="brand-text">Veille Technologique</span></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#definition">Définition</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#methodologie">Méthodologie</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#perspectives">Perspectives</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#conclusions">Conclusions</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#idees">Idées Projets</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section id="home" class="hero-section">
+        <div class="hero-content">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-7">
+                        <div class="hero-text">
+                            <span class="badge-custom mb-3"><i class="fas fa-chart-line"></i> Veille Stratégique 2026</span>
+                            <h1 class="display-3 fw-bold text-white mb-4">Medical AI – Dual Agent System</h1>
+                            <p class="lead text-white mb-4">Système d'assistance médicale basé sur l'intelligence artificielle avec deux agents spécialisés : Agent Patient et Agent Médecin. Développé avec Node.js, React et Prisma pour une architecture robuste et sécurisée.</p>
+                            <div class="hero-buttons">
+                                <a href="#definition" class="btn btn-light btn-lg me-3"><i class="fas fa-book"></i> Lire la veille</a>
+                                <a href="#idees" class="btn btn-outline-light btn-lg"><i class="fas fa-lightbulb"></i> Opportunités</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="hero-graphic">
+                            <div class="floating-card">
+                                <i class="fas fa-brain"></i>
+                                <p>IA Patient</p>
+                            </div>
+                            <div class="floating-card">
+                                <i class="fas fa-stethoscope"></i>
+                                <p>IA Médecin</p>
+                            </div>
+                            <div class="floating-card">
+                                <i class="fas fa-database"></i>
+                                <p>Passerelle</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="definition" class="py-5 section-light">
+        <div class="container">
+            <div class="section-header text-center mb-5">
+                <span class="section-number">I</span>
+                <h2><i class="fas fa-book-open"></i> Définition du sujet</h2>
+                <p class="lead text-muted">Concept du système (2 IA + 1 passerelle)</p>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h5><i class="fas fa-user"></i> IA 1 — Assistant Patient</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Objectif :</strong> Aider le patient à décrire, trier, et suivre son problème.</p>
+                            <ul>
+                                <li><i class="fas fa-check-circle text-success"></i> Collecte guidée des symptômes</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Questionnaire dynamique</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Conseils de base non dangereux</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Triage intelligent (urgence, médecin sous 24-48h, surveillance)</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Orientation vers spécialité adaptée</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Suivi longitudinal des améliorations</li>
+                            </ul>
+                            <p class="text-warning small mt-3"><strong>⚠️ Important :</strong> N'effectue pas de diagnostic. Oriente et accompagne uniquement.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-header bg-success text-white">
+                            <h5><i class="fas fa-user-md"></i> IA 2 — Assistant Médecin</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Objectif :</strong> Aider le médecin à analyser et produire des documents structurés.</p>
+                            <ul>
+                                <li><i class="fas fa-check-circle text-success"></i> Résumé des données médicales</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Aide à l'interprétation clinique</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Proposition de diagnostics différentiels</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Génération de compte-rendu patient</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Plan de suivi et alertes</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Validation médicale requise</li>
+                            </ul>
+                            <p class="text-warning small mt-3"><strong>⚠️ Important :</strong> N'assiste que le médecin, ne le remplace pas.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-header bg-info text-white">
+                            <h5><i class="fas fa-database"></i> Passerelle — Dossier Patient</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Cœur du projet :</strong> Gestion sécurisée et éthique des données patient.</p>
+                            <ul>
+                                <li><i class="fas fa-check-circle text-success"></i> Stockage de l'historique complet</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Gestion granulaire du consentement</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Journalisation audit-compliant</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Anonymisation pour la recherche</li>
+                                <li><i class="fas fa-check-circle text-success"></i> Chiffrement bout-en-bout</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="methodologie" class="py-5 section-dark">
+        <div class="container">
+            <div class="section-header text-center mb-5">
+                <span class="section-number">II</span>
+                <h2><i class="fas fa-microscope"></i> Méthodologie & Sources</h2>
+                <p class="lead text-muted">Approche de veille et flux d'implémentation</p>
+            </div>
+            <div class="row mb-5">
+                <div class="col-md-6 mb-4">
+                    <div class="methodology-card">
+                        <h5 class="card-header-custom"><i class="fas fa-list-check"></i> Approche de développement</h5>
+                        <ul class="list-unstyled mt-3">
+                            <li><i class="fas fa-check-circle text-success"></i> Architecture modulaire (Backend/Frontend séparés)</li>
+                            <li><i class="fas fa-check-circle text-success"></i> Triage déterministe pour la sécurité médicale</li>
+                            <li><i class="fas fa-check-circle text-success"></i> Séparation stricte des rôles Patient/Médecin</li>
+                            <li><i class="fas fa-check-circle text-success"></i> Validation médicale obligatoire</li>
+                            <li><i class="fas fa-check-circle text-success"></i> Tests et sécurité en priorité</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="methodology-card">
+                        <h5 class="card-header-custom"><i class="fas fa-link"></i> Technologies & Outils</h5>
+                        <ul class="list-unstyled mt-3">
+                            <li><i class="fas fa-external-link-alt text-primary"></i> <strong>Backend :</strong> Node.js, Express, Prisma, SQLite</li>
+                            <li><i class="fas fa-external-link-alt text-primary"></i> <strong>Frontend :</strong> React 18, Vite, Bootstrap</li>
+                            <li><i class="fas fa-external-link-alt text-primary"></i> <strong>IA :</strong> OpenRouter/Groq API, règles déterministes</li>
+                            <li><i class="fas fa-external-link-alt text-primary"></i> <strong>Sécurité :</strong> JWT, rate limiting, validation Zod</li>
+                            <li><i class="fas fa-external-link-alt text-primary"></i> <strong>Outils :</strong> Git, VS Code, Postman</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <h4 class="mb-4 mt-5 text-white"><i class="fas fa-route"></i> Flux complet - Scénario réaliste</h4>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-primary"></div>
+                    <div class="timeline-content">
+                        <h5>1. Patient → IA Patient</h5>
+                        <p>Description des symptômes + photo optionnelle</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-primary"></div>
+                    <div class="timeline-content">
+                        <h5>2. Questionnaire dynamique</h5>
+                        <p>Questions sur durée, intensité, antécédents, traitement essayé</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-warning"></div>
+                    <div class="timeline-content">
+                        <h5>3. Conseils + Triage</h5>
+                        <p>Conseils de base + niveau d'urgence (urgence, 24-48h, surveillance)</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-info"></div>
+                    <div class="timeline-content">
+                        <h5>4. Orientation</h5>
+                        <p>Proposition de spécialité + médecins proches (selon localisation)</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-success"></div>
+                    <div class="timeline-content">
+                        <h5>5. Consultation</h5>
+                        <p>Médecin accède au pré-dossier structuré avec timeline</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-success"></div>
+                    <div class="timeline-content">
+                        <h5>6. Analyses & Résultats</h5>
+                        <p>Upload des résultats (PDF/texte) + interprétation IA Médecin</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-info"></div>
+                    <div class="timeline-content">
+                        <h5>7. Explication Patient</h5>
+                        <p>Version vulgarisée validée par le médecin + suivi proposé</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="perspectives" class="py-5 section-light">
+        <div class="container">
+            <div class="section-header text-center mb-5">
+                <span class="section-number">III</span>
+                <h2><i class="fas fa-compass"></i> Perspectives d'évolution</h2>
+                <p class="lead text-muted">Analyses multi-dimensionnelles du sujet</p>
+            </div>
+            <div class="row mb-5">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="perspective-card perspective-tech">
+                        <div class="perspective-icon"><i class="fas fa-microchip"></i></div>
+                        <h5>Évolutions Techniques</h5>
+                        <ul class="small">
+                            <li><strong>•</strong> Migration vers PostgreSQL/MySQL</li>
+                            <li><strong>•</strong> Interface utilisateur améliorée</li>
+                            <li><strong>•</strong> Intégration d'autres modèles LLM</li>
+                            <li><strong>•</strong> Système de notifications temps réel</li>
+                            <li><strong>•</strong> API REST complète et documentation</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="perspective-card perspective-econ">
+                        <div class="perspective-icon"><i class="fas fa-chart-pie"></i></div>
+                        <h5>Perspectives Médicales</h5>
+                        <ul class="small">
+                            <li><strong>•</strong> Validation par professionnels de santé</li>
+                            <li><strong>•</strong> Tests cliniques pilotes</li>
+                            <li><strong>•</strong> Intégration dans workflow médical</li>
+                            <li><strong>•</strong> Conformité réglementaire complète</li>
+                            <li><strong>•</strong> Formation et adoption par les équipes</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="perspective-card perspective-social">
+                        <div class="perspective-icon"><i class="fas fa-users"></i></div>
+                        <h5>Impact Social</h5>
+                        <ul class="small">
+                            <li><strong>•</strong> Amélioration de l'accès aux soins</li>
+                            <li><strong>•</strong> Réduction des délais de consultation</li>
+                            <li><strong>•</strong> Triage intelligent des urgences</li>
+                            <li><strong>•</strong> Support aux zones sous-médicalisées</li>
+                            <li><strong>•</strong> Éducation et prévention santé</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="perspective-card perspective-legal">
+                        <div class="perspective-icon"><i class="fas fa-gavel"></i></div>
+                        <h5>Conformité Réglementaire</h5>
+                        <ul class="small">
+                            <li><strong>•</strong> Certification dispositif médical</li>
+                            <li><strong>•</strong> Conformité RGPD & données santé</li>
+                            <li><strong>•</strong> Responsabilité médicale encadrée</li>
+                            <li><strong>•</strong> Traçabilité des décisions IA</li>
+                            <li><strong>•</strong> Validation éthique et sécurité</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-5">
+                <div class="col-md-6 mb-4">
+                    <div class="perspective-card perspective-env">
+                        <div class="perspective-icon"><i class="fas fa-leaf"></i></div>
+                        <h5>Impact Environnemental</h5>
+                        <ul class="small">
+                            <li><strong>•</strong> Réduction des déplacements médicaux</li>
+                            <li><strong>•</strong> Téléconsultation à distance</li>
+                            <li><strong>•</strong> Diminution des émissions CO2</li>
+                            <li><strong>•</strong> Optimisation des ressources médicales</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="perspective-card perspective-ethic">
+                        <div class="perspective-icon"><i class="fas fa-heart"></i></div>
+                        <h5>Principes Éthiques</h5>
+                        <ul class="small">
+                            <li><strong>•</strong> Biais algorithmiques minimisés (fairness)</li>
+                            <li><strong>•</strong> Transparence IA (explainability)</li>
+                            <li><strong>•</strong> Non-substitution du médecin</li>
+                            <li><strong>•</strong> Autonomie patient préservée</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="role-separation-card">
+                        <h4 class="mb-4"><i class="fas fa-shield-alt"></i> Séparation stricte des rôles (garantie de sécurité)</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="role-box">
+                                    <h5 class="mb-3" style="color: #1e3c72;"><i class="fas fa-user"></i> IA Patient</h5>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-times text-danger"></i> <strong>✗ Pas de diagnostic définitif</strong></li>
+                                        <li><i class="fas fa-times text-danger"></i> <strong>✗ Pas de prescription</strong></li>
+                                        <li><i class="fas fa-check text-success"></i> <strong>✓ Conseils "safe" + triage</strong></li>
+                                        <li><i class="fas fa-check text-success"></i> <strong>✓ Orientation + suivi</strong></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="role-box">
+                                    <h5 class="mb-3" style="color: #10b981;"><i class="fas fa-user-md"></i> IA Médecin</h5>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success"></i> <strong>✓ Accès avec consentement</strong></li>
+                                        <li><i class="fas fa-check text-success"></i> <strong>✓ Hypothèses/différentiels</strong></li>
+                                        <li><i class="fas fa-check text-success"></i> <strong>✓ Note clinique + vulgarisation</strong></li>
+                                        <li><i class="fas fa-check text-success"></i> <strong>✓ Validée par le médecin</strong></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="conclusions" class="py-5 section-dark">
+        <div class="container">
+            <div class="section-header text-center mb-5">
+                <span class="section-number">IV</span>
+                <h2><i class="fas fa-telescope"></i> Conclusions & Vision Prospective</h2>
+                <p class="lead text-muted">Évolution du sujet et orientations futures</p>
+            </div>
+            <div class="row mb-5">
+                <div class="col-lg-6 mb-4">
+                    <div class="conclusion-card">
+                        <h5 class="mb-3"><i class="fas fa-graduation-cap"></i> État actuel du projet</h5>
+                        <ul>
+                            <li><strong>✅ Architecture complète :</strong> Backend Node.js/Express + Frontend React implémentés</li>
+                            <li><strong>✅ Authentification :</strong> Système JWT avec rôles Patient/Médecin/SuperAdmin</li>
+                            <li><strong>✅ IA hybride :</strong> Triage déterministe + LLM conversationnel fonctionnel</li>
+                            <li><strong>✅ Base de données :</strong> Modèle Prisma avec relations complexes</li>
+                            <li><strong>✅ API REST :</strong> Endpoints principaux opérationnels</li>
+                            <li><strong>✅ Sécurité :</strong> Rate limiting, validation Zod, protection inputs</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="conclusion-card">
+                        <h5 class="mb-3"><i class="fas fa-telescope"></i> Perspectives d'évolution</h5>
+                        <p>Extension vers un système de production complet.</p>
+                        <ul>
+                            <li><strong>Migration DB :</strong> PostgreSQL pour la production</li>
+                            <li><strong>Localisation :</strong> Intégration Google Places API</li>
+                            <li><strong>Médias :</strong> Upload et analyse d'images médicales</li>
+                            <li><strong>Workflow :</strong> Notifications temps réel et rappels</li>
+                            <li><strong>Analytics :</strong> Tableaux de bord et métriques</li>
+                            <li><strong>Compliance :</strong> Audit logs et traçabilité complète</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-info border-0 shadow-sm" role="alert">
+                <h5 class="alert-heading"><i class="fas fa-lightbulb"></i> Point d'inflexion critique</h5>
+                <p>La différenciation compétitive réside dans la <strong>qualité du suivi longitudinal</strong> et la <strong>confiance patient</strong>, pas dans la sophistication IA pure.</p>
+            </div>
+            <h4 class="mb-4 mt-5 text-white"><i class="fas fa-camera"></i> Captures d'écran de l'application</h4>
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <img src="https://via.placeholder.com/480x270?text=Login+Patient" class="card-img-top" alt="Screenshot Login Patient" />
+                        <div class="card-body">
+                            <h5 class="card-title">Page de login</h5>
+                            <p class="card-text">Interface sécurisée pour l’accès Patient/Médecin avec JWT et rôle dédié.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <img src="https://via.placeholder.com/480x270?text=Dashboard+Patient" class="card-img-top" alt="Screenshot Dashboard Patient" />
+                        <div class="card-body">
+                            <h5 class="card-title">Dashboard Patient</h5>
+                            <p class="card-text">Saisie des symptômes, triage déterministe et suggestions d’orientation.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <img src="https://via.placeholder.com/480x270?text=Dashboard+Medecin" class="card-img-top" alt="Screenshot Dashboard Medecin" />
+                        <div class="card-body">
+                            <h5 class="card-title">Dashboard Médecin</h5>
+                            <p class="card-text">Analyse des dossiers, génération de rapport médical et validation de la vulgarisation.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="mb-4 mt-5 text-white"><i class="fas fa-star"></i> Avantages clés du projet</h4>
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5><i class="fas fa-check-circle text-success"></i> Triage intelligent</h5>
+                            <p>Détection de "red flags" : douleur thoracique + essoufflement → urgence immédiate.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5><i class="fas fa-check-circle text-success"></i> Synthèse automatique</h5>
+                            <p>Timeline des symptômes, tableaux de gravité et facteurs aggravants.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5><i class="fas fa-check-circle text-success"></i> Vulgarisation multi-niveaux</h5>
+                            <p>Modes simple, détaillé, pour accompagnants + accessibilité.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5><i class="fas fa-check-circle text-success"></i> Suivi longitudinal</h5>
+                            <p>Rappels de médicaments, graphs de suivi (douleur, fièvre, glycémie).</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5><i class="fas fa-check-circle text-success"></i> Mini film explicatif</h5>
+                            <p>Génération de script + storyboard, slides + voix off, validé par le médecin avant diffusion.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture" class="py-5 section-light">
+        <div class="container">
+            <h4 class="mb-5 text-center"><i class="fas fa-cogs"></i> Architecture technique (Stack réel)</h4>
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="architecture-box">
+                        <h6 class="mb-3"><i class="fas fa-server"></i> Backend</h6>
+                        <ul>
+                            <li><strong>Runtime :</strong> Node.js</li>
+                            <li><strong>Framework :</strong> Express.js</li>
+                            <li><strong>ORM :</strong> Prisma</li>
+                            <li><strong>Base :</strong> SQLite</li>
+                            <li><strong>Auth :</strong> JWT + Nodemailer</li>
+                            <li><strong>Validation :</strong> Zod</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="architecture-box">
+                        <h6 class="mb-3"><i class="fas fa-desktop"></i> Frontend</h6>
+                        <ul>
+                            <li><strong>Framework :</strong> React 18</li>
+                            <li><strong>Build :</strong> Vite</li>
+                            <li><strong>Routing :</strong> React Router</li>
+                            <li><strong>State :</strong> React Hooks</li>
+                            <li><strong>UI :</strong> Bootstrap/Material-UI</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="architecture-box">
+                        <h6 class="mb-3"><i class="fas fa-brain"></i> IA & Sécurité</h6>
+                        <ul>
+                            <li><strong>Triage :</strong> Règles déterministes</li>
+                            <li><strong>LLM :</strong> OpenRouter/Groq</li>
+                            <li><strong>Sécurité :</strong> Rate limiting</li>
+                            <li><strong>CORS :</strong> Configuré</li>
+                            <li><strong>Validation :</strong> Input sanitization</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="compliance" class="py-5 section-dark">
+        <div class="container">
+            <h4 class="mb-5 text-center text-white"><i class="fas fa-exclamation-circle"></i> Limites et compliance</h4>
+            <div class="alert alert-warning border-0 shadow-sm">
+                <h5><i class="fas fa-exclamation-triangle"></i> Principes fondamentaux</h5>
+                <ul>
+                    <li><strong>L'IA ne remplace pas un médecin</strong> : elle assiste et complément</li>
+                    <li><strong>IA Patient :</strong> pas de diagnostic, pas d'ordonnance, conseils exclusivement de base</li>
+                    <li><strong>IA Médecin :</strong> propose (hypothèses), le médecin décide et valide</li>
+                    <li><strong>Protection des données :</strong> consentement granulaire + audit + RGPD compliance</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="idees" class="py-5 section-light">
+        <div class="container">
+            <div class="section-header text-center mb-5">
+                <span class="section-number">V</span>
+                <h2><i class="fas fa-lightbulb"></i> Fonctionnalités implémentées</h2>
+                <p class="lead text-muted">Le système Medical AI - Dual Agent System</p>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="mvp-card">
+                        <i class="fas fa-user"></i>
+                        <h5>Agent Patient</h5>
+                        <p class="mb-3">Interface conversationnelle avec triage déterministe GREEN/ORANGE/RED</p>
+                        <small class="text-muted">Analyse symptômes → Questions complémentaires → Conseils prudents → Orientation spécialiste</small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="mvp-card">
+                        <i class="fas fa-user-md"></i>
+                        <h5>Agent Médecin</h5>
+                        <p class="mb-3">Dashboard médical avec synthèse et vulgarisation validée</p>
+                        <small class="text-muted">Consultation dossiers → Analyse clinique → Hypothèses prudentes → Explication patient</small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="mvp-card">
+                        <i class="fas fa-database"></i>
+                        <h5>Backend Orchestrateur</h5>
+                        <p class="mb-3">API REST avec gestion sessions et workflow médical</p>
+                        <small class="text-muted">Auth JWT → Gestion rôles → Stockage Prisma → Intégration LLM</small>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-md-6 mb-4">
+                    <div class="alert alert-info border-0 shadow-sm">
+                        <h6><i class="fas fa-shield-alt"></i> Sécurité & Conformité</h6>
+                        <ul class="mb-0 small">
+                            <li>Authentification séparée Patient/Médecin</li>
+                            <li>Rate limiting et protection DDoS</li>
+                            <li>Validation stricte des inputs (Zod)</li>
+                            <li>Workflow validation médicale obligatoire</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="alert alert-success border-0 shadow-sm">
+                        <h6><i class="fas fa-code"></i> Technologies utilisées</h6>
+                        <ul class="mb-0 small">
+                            <li>Backend : Node.js + Express + Prisma</li>
+                            <li>Frontend : React 18 + Vite</li>
+                            <li>Base : SQLite (développement)</li>
+                            <li>IA : Triage règles + LLM conversationnel</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-success mt-5 border-0 shadow-sm">
+                <h5><i class="fas fa-rocket"></i> État du projet</h5>
+                <p>Le système est <strong>fonctionnel</strong> avec les endpoints principaux implémentés. Architecture modulaire permettant l'extension vers PostgreSQL en production et l'ajout de fonctionnalités avancées (localisation médecins, upload images, etc.).</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-white py-5">
+        <div class="container text-center">
+            <p class="mb-2">&copy; 2026 Veille Technologique - IA Générative en Santé Connectée</p>
+            <p class="small text-muted">Document de synthèse prospective | Analyse multi-dimensionnelle | Opportunités d'innovation</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
