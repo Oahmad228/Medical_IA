@@ -1,291 +1,83 @@
-# Medical AI – Dual Agent System
+# Medical AI
 
-## 1. Introduction
+Assistant medical a deux agents (patient et medecin) pour le triage, la synthese clinique et le suivi des rendez-vous.
 
-Ce projet vise à développer un **système d'assistance médicale basé sur l'intelligence artificielle** capable d'aider les patients à comprendre leurs symptômes et d'assister les médecins dans l'analyse d'informations cliniques.
+Documentation detaillee:
 
-L'objectif principal est de créer un système composé de **deux agents IA spécialisés** :
+- [docs/project_overview.md](docs/project_overview.md)
+- [docs/architecture.md](docs/architecture.md)
 
-- **Agent Patient** : interagit avec les patients, analyse les symptômes, pose des questions et oriente.
-- **Agent Médecin** : assiste le médecin (synthèse, hypothèses prudentes, points de vigilance, vulgarisation).
+## Table des matieres
 
-Ce projet est développé dans un **contexte académique** afin de démontrer l'utilisation de l'IA dans le domaine médical.
+- Apercu
+- Fonctionnalites
+- Stack technique
+- Prerequis
+- Installation et lancement
+- Variables d'environnement
+- Scripts utiles
+- Structure du projet
+- Depannage
+- Limites et avertissement
+- Licence
 
-⚠️ Ce système **ne remplace pas un médecin**. Il s'agit uniquement d'un outil d'assistance.
+## Apercu
 
-Document de cadrage fusionne (version longue): `docs/project_overview.md`
-Architecture technique (modules): `docs/architecture.md`
+Medical AI fournit:
 
----
+- un agent patient pour analyser des symptomes et produire un triage (GREEN/ORANGE/RED)
+- un agent medecin pour synthese, recommandations et validation de rapport
+- un backend d'orchestration (auth, roles, conversation, rapports, rendez-vous)
 
-## 2. Objectif du projet
+## Fonctionnalites
 
-Le projet vise à créer une application capable de :
+- Analyse des symptomes en langage naturel
+- Triage medical (GREEN/ORANGE/RED)
+- Conseils prudents et orientation vers specialiste
+- Liaison medecin/patient via OTP (email)
+- Rapports medecin avec validation avant diffusion au patient
+- Rendez-vous patient et medecin
+- Geolocalisation et carte Mapbox (cabinet + position patient)
+- Recherche de medecins proches (OpenStreetMap)
 
-- analyser les symptômes décrits par un patient
-- déterminer le niveau d'urgence (triage)
-- proposer des conseils simples et prudents
-- orienter vers un spécialiste si nécessaire
-- localiser des médecins proches du patient (optionnel)
-- assister les médecins dans l'analyse des informations médicales
-- vulgariser les informations médicales pour les patients
+## Stack technique
 
----
+- Backend: Node.js, Express, Prisma, SQLite
+- Frontend: React (Vite)
+- IA: triage par regles + LLM (OpenRouter ou Groq)
 
-## 3. Architecture générale du système
+## Prerequis
 
-Le système repose sur trois composants principaux.
+- Node.js 18+
+- npm (fourni avec Node)
 
-### 1️⃣ Agent IA Patient
+## Installation et lancement
 
-Cet agent interagit directement avec le patient.
-
-Fonctions principales :
-
-- compréhension des symptômes
-- questions complémentaires
-- triage médical (GREEN / ORANGE / RED)
-- conseils simples
-- orientation vers un spécialiste
-- recherche de médecins proches (si Google Places configuré)
-
-Exemple :
-
-Patient :
-
-> "J'ai mal à la tête depuis 3 jours."
-
-L'agent va :
-
-- analyser la description
-- poser des questions complémentaires
-- déterminer le niveau d'urgence
-- proposer des recommandations
-
----
-
-### 2️⃣ Agent IA Médecin
-
-Cet agent est destiné aux médecins.
-
-Fonctions principales :
-
-- analyser les informations fournies
-- produire une synthèse concise
-- proposer des hypothèses prudentes
-- suggérer ce qu’il faut vérifier en priorité
-- générer une explication simple pour le patient
-
-Le médecin garde **toujours la décision finale**.
-
----
-
-### 3️⃣ Backend Orchestrateur
-
-Le backend agit comme le **coordinateur du système** :
-
-- gestion des sessions et des rôles (PATIENT / DOCTOR / SUPERADMIN)
-- stockage (Prisma + SQLite)
-- triage par règles
-- appels LLM (OpenRouter/Groq) pour des conversations naturelles
-- endpoints d'auth, d'admin, et de chat
-
----
-
-## 4. Fonctionnalités principales
-
-### 4.1 Analyse des symptômes
-
-Le patient peut décrire ses symptômes en langage naturel.
-
-Exemple :
-
-```text
-J'ai une douleur au ventre depuis hier soir.
-```
-
-Le système va :
-
-1. analyser la description
-2. poser des questions supplémentaires si nécessaire
-3. déterminer le niveau d'urgence
-4. prendre en compte des images jointes (si fournies, mode live)
-
----
-
-### 4.2 Système de triage médical
-
-Les cas sont classés selon trois niveaux :
-
-- **🟢 GREEN (faible gravité)** : surveillance / conseils généraux
-- **🟠 ORANGE (consultation recommandée)** : consultation rapide
-- **🔴 RED (urgence)** : recommandation d’urgence immédiate
-
----
-
-### 4.3 Orientation vers un spécialiste
-
-Si nécessaire, l'agent patient suggère un type de médecin :
-
-- médecin généraliste
-- dermatologue
-- cardiologue
-- ORL
-- neurologue
-
----
-
-### 4.4 Localisation des médecins (optionnel)
-
-Le système peut utiliser **Google Maps / Google Places API** pour :
-
-- trouver des médecins proches
-- récupérer des informations (nom, adresse, note)
-
----
-
-### 4.5 Assistance pour les médecins
-
-Le médecin peut :
-
-- consulter les échanges enregistrés
-- obtenir une synthèse et des points de vigilance
-- recevoir une explication “patient-friendly”
-- valider le rapport avant diffusion côté patient (workflow draft -> approve)
-
----
-
-### 4.6 Vulgarisation médicale
-
-Le système transforme des termes médicaux en explications simples.
-
-Exemple :
-
-> "Inflammation des voies respiratoires supérieures."
-
-Devient :
-
-> "Il s'agit probablement d'une irritation ou d'une infection légère des voies respiratoires."
-
----
-
-## 5. Technologies utilisées
-
-### Backend
-
-- Node.js
-- Express.js
-- Prisma
-- SQLite
-
-### Frontend
-
-- React (Vite)
-
-### IA
-
-- **Triage par règles** (déterministe, sécurité)
-- **LLM** (OpenRouter ou Groq) pour une conversation naturelle et contextuelle
-
----
-
-## 6. Endpoints principaux (actuels)
-
-### Health
-
-- `GET /health`
-
-### Auth
-
-- `POST /auth/signup/patient`
-- `POST /auth/signup/doctor`
-- `POST /auth/login`
-- `POST /auth/logout`
-- `POST /auth/verify-email/request`
-- `POST /auth/verify-email/confirm`
-- `POST /auth/forgot-password`
-- `POST /auth/reset-password`
-
-### Chat
-
-- `GET /chat/conversations`
-- `POST /chat/conversations`
-- `GET /chat/conversations/:id/messages`
-- `POST /chat/conversations/:id/messages`
-- `DELETE /chat/conversations/:id`
-
-### Admin (superadmin)
-
-- `GET /admin/doctor-requests?status=PENDING|ACTIVE|REJECTED`
-- `POST /admin/doctor-requests/:userId/approve`
-- `POST /admin/doctor-requests/:userId/reject`
-
-### Patients
-- `GET /patients/:id/history` (non accessible côté patient)
-
-### Médecin / OTP / Rapports
-
-- `POST /doctor/patient-link/request-otp`
-- `POST /doctor/patient-link/confirm-otp`
-- `GET /doctor/patient-link/status`
-- `GET /doctor/reports/latest`
-- `POST /doctor/reports/:reportId/approve`
-
-### Patient / Rapports validés
-
-- `GET /patient/reports/latest`
-
----
-
-## 7. Structure du projet
-
-```text
-Medical_IA/
-├─ backend/
-│  ├─ prisma/schema.prisma
-│  └─ server.js
-├─ frontend/
-│  └─ src/
-│     ├─ App.jsx
-│     └─ styles.css
-├─ ai/
-├─ docs/
-└─ eval/
-```
-
----
-
-## 8. Démarrage
-
-### Backend
-
-Depuis `backend/` :
+### 1) Backend
 
 ```bash
+cd backend
 npm install
 npm run prisma:generate
 npm run prisma:push
 npm run dev
 ```
 
-Backend actif sur `http://localhost:3001`.
+Backend: http://localhost:3001
 
-### Frontend
-
-Depuis `frontend/` :
+### 2) Frontend
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Frontend Vite par défaut sur `http://localhost:5173`.
+Frontend: http://localhost:5173 (ou un autre port si deja pris)
 
----
+## Variables d'environnement
 
-## 9. Variables d'environnement (backend)
-
-Exemple minimal (OpenRouter) :
+Backend (backend/.env):
 
 ```dotenv
 DATABASE_URL="file:./dev.db"
@@ -295,166 +87,63 @@ LLM_MODEL=mistralai/mistral-small-3.1-24b-instruct:free
 APP_BASE_URL=http://localhost:5173
 ```
 
-Optionnel :
+Optionnel:
 
-- `SMTP_*` (pour verification email + reset password)
+- SMTP_* (verification email + reset password)
 
-La recherche de medecins utilise OpenStreetMap (Nominatim + Overpass) sans cle API.
+Frontend (frontend/.env):
 
----
+```dotenv
+VITE_API_BASE_URL=http://localhost:3001
+VITE_MAPBOX_TOKEN=pk.eyJ...
+VITE_MAPBOX_STYLE=mapbox://styles/your-style-id
+```
 
-## 10. Limites du projet
+Notes:
 
-Ce projet est un **prototype académique** :
+- Mapbox necessite un token valide.
+- Si VITE_MAPBOX_STYLE est absent, un style par defaut est utilise.
 
-- non certifié médicalement
-- recommandations générales et prudentes
-- sécurité simplifiée (sessions en mémoire, prototype)
-- pas de diagnostic clinique
+## Scripts utiles
 
----
+Backend:
 
-## 11. Propositions produit (prochaine étape)
+- `npm run dev`
+- `npm run prisma:generate`
+- `npm run prisma:push`
 
-Cette section décrit des **propositions de conception** (sans implémentation immédiate), alignées avec ton besoin: expérience patient plus engageante, et workflow médecin plus strict avant retour au patient.
+Frontend:
 
-### 11.1 Expérience Patient uniquement (chibi + niveau de préoccupation)
+- `npm run dev`
+- `npm run build`
+- `npm run preview`
 
-- Le patient ne voit **pas** le rapport longitudinal interne.
-- Le patient voit uniquement:
-  - son historique de conversation
-  - les réponses de son agent IA
-  - un indicateur visuel via mascotte/chibi
-- L'indicateur de préoccupation est porté par le comportement du chibi:
-  - **GREEN**: posture calme, respiration/méditation, message rassurant
-  - **ORANGE**: posture attentive, animation d'analyse, message de vigilance
-  - **RED**: posture d'alerte, animation dynamique, message "urgence"
+## Structure du projet
 
-Proposition UI:
+```text
+Medical_IA/
+├─ backend/
+│  ├─ prisma/
+│  └─ src/
+├─ frontend/
+│  └─ src/
+├─ ai/
+├─ docs/
+└─ eval/
+```
 
-- Une carte fixe à droite: personnage + bulle texte courte
-- Bulle cliquable pour afficher le détail "ce que le patient doit faire maintenant"
-- Pas de jargon médical, consignes simples et actionnables
+## Depannage
 
-### 11.2 Choix de l'assistant lors de l'inscription patient
+- Ecran blanc: ouvrir la console navigateur et verifier les erreurs JS.
+- Carte vide Mapbox: verifier le token et desactiver AdBlock pour api.mapbox.com / events.mapbox.com.
+- Port 5173 occupe: Vite affiche l'URL exacte au demarrage.
+- Prisma: relancer `npm run prisma:push` si la base est desynchronisee.
 
-Lors de la création de compte patient, proposer un choix de persona visuel (chibi) qui restera son assistant principal:
+## Limites et avertissement
 
-- Docteur (humain)
-- Infirmier/Infirmière (humain)
-- Hibou (animal, calme/observateur)
-- Chien de secours (animal, protecteur/alerte)
+Ce projet est un prototype academique. Il ne remplace pas un medecin.
 
-Règles:
+## Licence
 
-- Valeur par défaut pour les comptes existants: **Docteur**
-- Le persona n'impacte pas la logique médicale, uniquement l'UX (avatar, ton de la bulle, animations)
-- Le patient peut modifier son persona plus tard dans ses paramètres (option recommandée)
-
-### 11.3 Espace médecin (sans indicateur chibi)
-
-- Le médecin n'a pas d'indicateur "niveau de préoccupation" visuel.
-- Il consulte:
-  - rapport IA structuré
-  - historique clinique utile
-  - points de vigilance
-- Le médecin garde l'interprétation clinique finale.
-
-### 11.4 Liaison médecin-patient avec OTP
-
-Proposition de flux pour associer un médecin à un patient:
-
-1. Le médecin saisit l'identifiant du patient.
-2. Le système envoie un OTP au patient par email.
-3. Le médecin renseigne cet OTP pour confirmer l'association.
-4. Une fois validé, le médecin accède au rapport IA du patient.
-
-Contraintes de sécurité recommandées:
-
-- OTP court (6 chiffres), expiration rapide (ex: 10 minutes)
-- Nombre max d'essais (ex: 5), puis blocage temporaire
-- Journalisation des tentatives et confirmations
-
-### 11.5 Double validation du rapport avant retour patient
-
-Workflow cible:
-
-1. L'agent médecin produit une proposition de rapport clinique.
-2. Le médecin relit, édite, puis confirme.
-3. Seulement après confirmation, une version patient est générée:
-   - explication vulgarisée
-   - consignes concrètes
-   - niveau de priorité compréhensible
-
-Ce mécanisme évite qu'un résumé non validé atteigne le patient.
-
-### 11.6 Restitution au patient (mail + bulle chibi)
-
-Après validation médecin:
-
-- Envoi d'un email patient (résumé + recommandations)
-- Affichage d'un message dans l'application via la bulle du chibi
-- Le patient clique la bulle pour ouvrir une fenêtre "Ce que mon médecin me recommande"
-
-Contenu minimal affiché au patient:
-
-- Ce qu'il faut faire maintenant
-- Signaux d'alerte à surveiller
-- Quand recontacter / consulter en urgence
-- Spécialiste recommandé (si applicable)
-
-### 11.7 Données et modèle (proposition)
-
-Pour préparer l'implémentation future, prévoir:
-
-- `Patient.assistantPersona` (DOCTOR, NURSE, OWL, RESCUE_DOG)
-- `DoctorPatientLink` (doctorId, patientId, status, linkedAt)
-- `PairingOtp` (codeHash, expiresAt, attempts, consumedAt)
-- `DoctorValidatedReport` (draftByAI, editedByDoctor, approvedAt)
-- `PatientFacingReport` (finalText, sentEmailAt, shownInAppAt)
-
-### 11.8 API cible (proposition)
-
-Exemples d'endpoints à planifier:
-
-- `POST /patient/preferences/assistant-persona`
-- `POST /doctor/patient-link/request-otp`
-- `POST /doctor/patient-link/confirm-otp`
-- `POST /doctor/reports/:id/approve`
-- `GET /patient/reports/latest`
-- `POST /patient/reports/:id/acknowledge`
-
-### 11.9 Plan d'implémentation conseillé
-
-- **Phase 1 (rapide)**: persona patient + UI chibi + défaut "Docteur" pour comptes existants
-- **Phase 2 (sécurité)**: liaison médecin-patient par OTP
-- **Phase 3 (qualité médicale)**: draft IA médecin + édition + approbation obligatoire
-- **Phase 4 (communication)**: génération version patient + email + bulle cliquable
-
-Ce découpage réduit les risques et permet de tester chaque bloc métier séparément.
-
----
-
-## 12. Etat d'implementation (mars 2026)
-
-Deja en place dans le code:
-
-- Le patient ne voit pas la memoire medicale persistante dans son panneau.
-- Memoire medicale persistante (`Patient.medicalMemory`) alimentee au fil des conversations.
-- Protection d'acces sur `GET /patients/:id/history` avec controle de role/proprietaire.
-- Association medecin/patient via OTP (backend + UI basique cote medecin).
-- Creation de rapports patient en mode `DRAFT` puis validation du medecin.
-- Exposition du rapport patient uniquement apres validation (`GET /patient/reports/latest`).
-- Choix de persona assistant a l'inscription patient (`DOCTOR`, `NURSE`, `OWL`, `RESCUE_DOG`).
-- Valeur par defaut pour comptes existants et nouveaux: `DOCTOR`.
-- UI patient: carte chibi dynamique selon le niveau (`GREEN`, `ORANGE`, `RED`).
-- UI patient: images chibi reelles (assets web telecharges), plus d'emojis.
-- UI medecin: indicateur chibi retire, focus sur rapport/analyse textuelle.
-- Upload d'images dans le chat (patient et medecin) transmis au contexte IA.
-
-Pas encore implemente (prochaine phase):
-
-- Edition du draft medecin avant validation (UI encore simplifiee).
-- Accuse reception patient (marqueur "lu" / "acquitté") et historique de consultation.
-- Durcissement securite (audits, journalisation fine des tentatives OTP, suppression des delais sensibles).
+Non specifiee.
 

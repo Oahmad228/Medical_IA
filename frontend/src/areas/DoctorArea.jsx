@@ -5,6 +5,7 @@ import ChatLayout from "../components/ChatLayout";
 import DoctorToolsPanel from "./doctor/components/DoctorToolsPanel";
 import DoctorSettingsModal from "./doctor/components/DoctorSettingsModal";
 import DoctorAppointmentsModal from "./doctor/components/DoctorAppointmentsModal";
+import ModalShell from "../components/ui/ModalShell";
 import { useDoctorChat } from "./doctor/hooks/useDoctorChat";
 import { useDoctorSettings } from "./doctor/hooks/useDoctorSettings";
 import { useDoctorDraftReport } from "./doctor/hooks/useDoctorDraftReport";
@@ -16,6 +17,7 @@ import { useDoctorDraftReport } from "./doctor/hooks/useDoctorDraftReport";
 export default function DoctorArea({ session, onLogout, onSessionUpdate }) {
   const token = session.token;
   const [appointmentsOpen, setAppointmentsOpen] = useState(false);
+  const [reportSentOpen, setReportSentOpen] = useState(false);
   const {
     latestDraftReport,
     draftLoading,
@@ -79,10 +81,14 @@ export default function DoctorArea({ session, onLogout, onSessionUpdate }) {
         className="btn-pill"
         disabled={approveLoading}
         onClick={async () => {
-          await approveDraft(latestDraftReport.id);
+          const result = await approveDraft(latestDraftReport.id);
           const pid = Number(composer.patientId);
           if (Number.isInteger(pid) && pid > 0) {
             await refreshLatestDraft(pid);
+          }
+          if (result?.status === "SENT" || result?.linkClosed) {
+            setComposer((prev) => ({ ...prev, patientId: "" }));
+            setReportSentOpen(true);
           }
         }}
       >
@@ -189,6 +195,21 @@ export default function DoctorArea({ session, onLogout, onSessionUpdate }) {
         onClose={() => setAppointmentsOpen(false)}
         token={token}
       />
+
+      <ModalShell
+        open={reportSentOpen}
+        onClose={() => setReportSentOpen(false)}
+        title="Rapport envoye"
+      >
+        <div className="form-stack">
+          <p className="muted">
+            Le rapport a ete valide et envoye au patient. La liaison a ete fermee.
+          </p>
+          <button type="button" onClick={() => setReportSentOpen(false)}>
+            Fermer
+          </button>
+        </div>
+      </ModalShell>
     </>
   );
 }

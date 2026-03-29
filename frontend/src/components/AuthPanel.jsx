@@ -62,6 +62,9 @@ export default function AuthPanel({
   );
   const [resetPassword, setResetPassword] = useState("");
   const [resetStatus, setResetStatus] = useState("idle");
+  const [signupConfirmOpen, setSignupConfirmOpen] = useState(false);
+  const [signupConfirmMessage, setSignupConfirmMessage] = useState("");
+  const [verifyConfirmOpen, setVerifyConfirmOpen] = useState(false);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -102,12 +105,14 @@ export default function AuthPanel({
     if (info) {
       setVerifyStatus("success");
       setVerifyMessage(info);
+      setVerifyConfirmOpen(true);
       return;
     }
 
     if (verifyStatus === "loading") {
       setVerifyStatus("success");
       setVerifyMessage("Email verifie.");
+      setVerifyConfirmOpen(true);
     }
   }, [view, verifyToken, loading, error, info, verifyStatus]);
 
@@ -228,19 +233,31 @@ export default function AuthPanel({
                 onSubmit={async (event) => {
                   event.preventDefault();
                   if (signupRole === "PATIENT") {
-                    await onSignupPatient({
+                    const response = await onSignupPatient({
                       ...patientSignup,
                       age: patientSignup.age.trim()
                         ? Number(patientSignup.age)
                         : undefined,
                     });
+                    if (response?.ok) {
+                      setSignupConfirmMessage(
+                        "Mail envoye. Verifiez votre boite mail ou vos spams pour activer le compte."
+                      );
+                      setSignupConfirmOpen(true);
+                    }
                   } else {
-                    await onSignupDoctor({
+                    const response = await onSignupDoctor({
                       ...doctorSignup,
                       yearsExperience: doctorSignup.yearsExperience.trim()
                         ? Number(doctorSignup.yearsExperience)
                         : undefined,
                     });
+                    if (response?.ok) {
+                      setSignupConfirmMessage(
+                        "Mail envoye. Verifiez votre boite mail ou vos spams. Votre compte sera ensuite valide par le superadmin."
+                      );
+                      setSignupConfirmOpen(true);
+                    }
                   }
                 }}
               >
@@ -519,6 +536,45 @@ export default function AuthPanel({
 
         {view !== "verify" && error ? <p className="error-text">{error}</p> : null}
       </section>
+      {signupConfirmOpen ? (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal__card">
+            <h2>Mail envoye</h2>
+            <p className="muted">{signupConfirmMessage}</p>
+            <div className="auth-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setSignupConfirmOpen(false);
+                  setSignupStep("role");
+                  goTo("login");
+                }}
+              >
+                Retour a la connexion
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {verifyConfirmOpen ? (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal__card">
+            <h2>Email valide</h2>
+            <p className="muted">Votre email a ete valide. Vous pouvez vous connecter.</p>
+            <div className="auth-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setVerifyConfirmOpen(false);
+                  goTo("login");
+                }}
+              >
+                Retour a la connexion
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

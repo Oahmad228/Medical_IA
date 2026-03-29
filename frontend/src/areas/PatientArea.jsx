@@ -23,6 +23,7 @@ export default function PatientArea({ session, onLogout, onSessionUpdate }) {
   const [lastTriage, setLastTriage] = useState("GREEN");
   const [lastEmotionLevel, setLastEmotionLevel] = useState(null);
   const [patientCoords, setPatientCoords] = useState(null);
+  const [autoPickDoctor, setAutoPickDoctor] = useState(null);
 
   const {
     latestReport,
@@ -109,6 +110,12 @@ export default function PatientArea({ session, onLogout, onSessionUpdate }) {
       if (!id) return;
       const fullName = doc.fullName || doc.name || `Medecin #${id}`;
       const specialty = doc.specialty || doc.doctorProfile?.specialty || "";
+      const yearsExperience =
+        typeof doc.yearsExperience === "number"
+          ? doc.yearsExperience
+          : typeof doc.doctorProfile?.yearsExperience === "number"
+          ? doc.doctorProfile.yearsExperience
+          : null;
       const clinicLat =
         parseCoord(doc.clinicLat) ?? parseCoord(doc.doctorProfile?.clinicLat);
       const clinicLng =
@@ -132,6 +139,7 @@ export default function PatientArea({ session, onLogout, onSessionUpdate }) {
         clinicName,
         clinicAddress,
         clinicCity,
+        yearsExperience,
         distanceKm,
         clinicHours: doc.clinicHours || "",
       });
@@ -156,6 +164,63 @@ export default function PatientArea({ session, onLogout, onSessionUpdate }) {
       setAppointmentForm((prev) => ({ ...prev, doctorUserId: String(availableDoctors[0].id) }));
     }
   }, [appointmentForm.doctorUserId, consultStatus?.doctor?.userId, availableDoctors, setAppointmentForm]);
+
+  const pickBestDoctor = useMemo(() => {
+    return (doctors, specialist) => {
+      if (!Array.isArray(doctors) || doctors.length === 0) return null;
+      const target = String(specialist || "").toLowerCase();
+      const scored = doctors.map((doc) => {
+        const docSpec = String(doc.specialty || "").toLowerCase();
+        const matchesSpec = target && docSpec.includes(target);
+        const experience = Number.isFinite(doc.yearsExperience) ? doc.yearsExperience : 0;
+        const distance = Number.isFinite(doc.distanceKm) ? doc.distanceKm : null;
+        const score =
+          (matchesSpec ? 60 : 0) +
+          Math.min(experience, 40) * 0.8 +
+          (distance !== null ? Math.max(0, 30 - distance) : 0);
+        return { doc, score, experience, distance };
+      });
+      scored.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.experience !== a.experience) return b.experience - a.experience;
+        if (a.distance !== null && b.distance !== null) return a.distance - b.distance;
+        if (a.distance !== null) return -1;
+        if (b.distance !== null) return 1;
+        return 0;
+      });
+      return scored[0]?.doc || null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!autoPickDoctor || !appointmentsOpen) return;
+    if (!Array.isArray(availableDoctors) || availableDoctors.length === 0) return;
+    const best = pickBestDoctor(availableDoctors, autoPickDoctor.specialist);
+    if (best) {
+      setAppointmentForm((prev) => ({ ...prev, doctorUserId: String(best.id) }));
+    }
+    setAutoPickDoctor(null);
+  }, [autoPickDoctor, appointmentsOpen, availableDoctors, pickBestDoctor, setAppointmentForm]);
+
+  const handleConsultationRequest = async ({ location }) => {
+    const near = String(location || "").trim();
+    const specialist = latestSymptomReport?.specialist || "medecin generaliste";
+
+    if (patientCoords || near) {
+      await searchDoctors({
+        near,
+        specialist,
+        lat: patientCoords?.lat,
+        lng: patientCoords?.lng,
+      });
+    }
+
+    await requestConsultation({ location: near });
+    await refreshConsultStatus();
+
+    setAutoPickDoctor({ specialist });
+    setAppointmentsOpen(true);
+  };
 
   const assistant = patientAssistantMeta(session?.user?.assistantPersona);
   const indicatorLevel = useMemo(() => {
@@ -265,8 +330,7 @@ export default function PatientArea({ session, onLogout, onSessionUpdate }) {
               searchDoctors({ near, specialist, lat, lng });
             }}
             onRequestConsultation={async ({ location }) => {
-              await requestConsultation({ location });
-              await refreshConsultStatus();
+              await handleConsultationRequest({ location });
             }}
             onOpenReport={handleOpenReport}
             onOpenAppointments={handleOpenAppointments}

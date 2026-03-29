@@ -90,12 +90,11 @@ export function useDoctorSettings({ session, token, onLogout, onSessionUpdate })
   );
 
   const closeSettings = useCallback(() => {
-    if (profileRequired) return;
     setSettingsOpen(false);
     setSettingsView(null);
     setSettingsError("");
     setSettingsInfo("");
-  }, [profileRequired]);
+  }, []);
 
   const saveProfile = useCallback(async () => {
     setSettingsError("");

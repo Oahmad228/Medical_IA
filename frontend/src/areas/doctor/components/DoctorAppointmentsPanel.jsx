@@ -6,7 +6,7 @@ import { APPOINTMENT_STATUS_LABELS } from "../../shared/appointmentLabels";
 // Section rendez-vous medecin.
 
 // Affiche et met a jour les rendez-vous en tant que medecin.
-export default function DoctorAppointmentsPanel({ token }) {
+export default function DoctorAppointmentsPanel({ token, onClose }) {
   const [appointments, setAppointments] = useState([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [appointmentsError, setAppointmentsError] = useState("");
@@ -136,17 +136,24 @@ export default function DoctorAppointmentsPanel({ token }) {
               <div className="appointment-thread__list-head">
                 <div className="appointment-thread__title">
                   <h4>Demandes</h4>
-                  <button
-                    type="button"
-                    className="appointment-search-toggle"
-                    title="Rechercher"
-                    onClick={() => searchInputRef.current?.focus()}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
-                      <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="1.6" />
-                    </svg>
-                  </button>
+                  <div className="appointment-thread__actions">
+                    <button
+                      type="button"
+                      className="appointment-search-toggle"
+                      title="Rechercher"
+                      onClick={() => searchInputRef.current?.focus()}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
+                        <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="1.6" />
+                      </svg>
+                    </button>
+                    {typeof onClose === "function" ? (
+                      <button type="button" className="ghost small" onClick={onClose}>
+                        Fermer
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="appointment-thread__filters">
                   <label htmlFor="appointment-search" className="sr-only">
@@ -212,13 +219,20 @@ export default function DoctorAppointmentsPanel({ token }) {
           ) : (
             <div className="appointment-thread__detail appointment-thread__detail-only">
               <div className="appointment-detail-head appointment-detail-head--stacked">
-                <button
-                  type="button"
-                  className="appointment-back"
-                  onClick={() => setActiveView("list")}
-                >
-                  Retour aux demandes
-                </button>
+                <div className="appointment-thread__actions">
+                  <button
+                    type="button"
+                    className="appointment-back"
+                    onClick={() => setActiveView("list")}
+                  >
+                    Retour aux demandes
+                  </button>
+                  {typeof onClose === "function" ? (
+                    <button type="button" className="ghost small" onClick={onClose}>
+                      Fermer
+                    </button>
+                  ) : null}
+                </div>
               </div>
               {selectedAppointment ? (() => {
               const appointment = selectedAppointment;

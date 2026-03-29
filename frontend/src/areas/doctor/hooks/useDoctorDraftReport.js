@@ -36,13 +36,15 @@ export function useDoctorDraftReport({ token }) {
       try {
         setApproveLoading(true);
         setApproveError("");
-        await api(`/doctor/reports/${reportId}/approve`, {
+        const result = await api(`/doctor/reports/${reportId}/approve`, {
           method: "POST",
           token,
           payload: {},
         });
+        return result;
       } catch (e) {
         setApproveError(e.message || "Erreur validation.");
+        return null;
       } finally {
         setApproveLoading(false);
       }

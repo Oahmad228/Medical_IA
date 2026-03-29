@@ -51,6 +51,28 @@
   gap: 12px;
 }
 
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 14, 22, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 80;
+  padding: 18px;
+}
+
+.auth-modal__card {
+  width: min(420px, 92vw);
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  text-align: center;
+}
+
 .auth-actions {
   display: grid;
   gap: 10px;

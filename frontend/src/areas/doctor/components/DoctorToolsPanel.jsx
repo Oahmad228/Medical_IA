@@ -26,7 +26,11 @@ export default function DoctorToolsPanel({
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState("");
   const [lookupPatientId, setLookupPatientId] = useState(null);
-  const triageTone = String(latestDraftReport?.triageLevel || "").toLowerCase();
+  const latestSymptom = Array.isArray(patientInfo?.symptomReports)
+    ? patientInfo.symptomReports[0]
+    : null;
+  const triageLevel = latestSymptom?.triageLevel || latestDraftReport?.triageLevel || "";
+  const triageTone = String(triageLevel).toLowerCase();
   const showTriage = ["green", "orange", "red"].includes(triageTone);
 
   const hasActiveLink = String(pairStatus || "").toUpperCase() === "ACTIVE";
@@ -36,9 +40,6 @@ export default function DoctorToolsPanel({
     patientInfo?.user?.fullName ||
     (composer.patientId ? `Patient #${composer.patientId}` : "Aucun patient selectionne");
   const patientEmail = patientInfo?.user?.email || "";
-  const latestSymptom = Array.isArray(patientInfo?.symptomReports)
-    ? patientInfo.symptomReports[0]
-    : null;
 
   async function resolvePatientName(patientId) {
     const pid = Number(patientId);
@@ -288,7 +289,7 @@ export default function DoctorToolsPanel({
             </div>
             {showTriage ? (
               <span className={`status-pill status-pill--${triageTone}`}>
-                {String(latestDraftReport?.triageLevel || "").toUpperCase()}
+                {String(triageLevel || "").toUpperCase()}
               </span>
             ) : null}
           </div>

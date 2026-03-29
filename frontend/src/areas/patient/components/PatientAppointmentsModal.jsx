@@ -81,6 +81,8 @@ export default function PatientAppointmentsModal({
               id: String(id),
               fullName: doc.fullName || doc.name || `Medecin #${id}`,
               specialty: doc.specialty || doc.doctorProfile?.specialty || "",
+              yearsExperience:
+                typeof doc.yearsExperience === "number" ? doc.yearsExperience : null,
               clinicLat: typeof doc.clinicLat === "number" ? doc.clinicLat : null,
               clinicLng: typeof doc.clinicLng === "number" ? doc.clinicLng : null,
               clinicName: doc.clinicName || "",

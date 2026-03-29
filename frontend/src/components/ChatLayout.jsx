@@ -149,7 +149,12 @@ export default function ChatLayout({
                   className="history-row__main"
                   onClick={() => handleSelectConversation(conversation.id)}
                 >
-                  <strong>{conversation.title}</strong>
+                  <strong>
+                    {String(conversation.title || "").trim().toLowerCase() ===
+                    "conversation initiale"
+                      ? "-"
+                      : conversation.title || "-"}
+                  </strong>
                   <span>{new Date(conversation.updatedAt).toLocaleString()}</span>
                 </button>
                 {typeof onDeleteConversation === "function" ? (

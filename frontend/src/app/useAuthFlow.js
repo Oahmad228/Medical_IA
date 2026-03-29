@@ -24,8 +24,10 @@ export function useAuthFlow() {
       if (typeof onSuccess === "function") {
         onSuccess(result);
       }
+      return { ok: true, result };
     } catch (error) {
       setAuthError(error.message);
+      return { ok: false, error };
     } finally {
       setAuthLoading(false);
     }

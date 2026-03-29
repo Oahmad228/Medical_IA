@@ -5,7 +5,7 @@ import DoctorAppointmentsPanel from "./DoctorAppointmentsPanel";
 export default function DoctorAppointmentsModal({ open, onClose, token }) {
   return (
     <ModalShell open={open} onClose={onClose} title="Rendez-vous">
-      <DoctorAppointmentsPanel token={token} />
+      <DoctorAppointmentsPanel token={token} onClose={onClose} />
     </ModalShell>
   );
 }

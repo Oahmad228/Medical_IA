@@ -91,6 +91,12 @@
   gap: 8px;
 }
 
+.appointment-thread__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .appointment-search-toggle {
   border: none;
   background: transparent;

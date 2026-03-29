@@ -243,6 +243,7 @@ async function searchDoctors(req, res) {
             userId: row.id,
             name: row.fullName,
             specialty: profile.specialty || null,
+            yearsExperience: profile.yearsExperience ?? null,
             clinicName: profile.clinicName || null,
             address: profile.clinicAddress || profile.clinicCity || "",
             clinicCity: profile.clinicCity || null,
@@ -310,6 +311,7 @@ async function suggestDoctors(req, res) {
         doctorProfile: {
           select: {
             specialty: true,
+            yearsExperience: true,
             clinicLat: true,
             clinicLng: true,
             clinicName: true,
@@ -327,6 +329,7 @@ async function suggestDoctors(req, res) {
         userId: row.id,
         fullName: row.fullName,
         specialty: row.doctorProfile?.specialty || null,
+        yearsExperience: row.doctorProfile?.yearsExperience ?? null,
         clinicLat: row.doctorProfile?.clinicLat ?? null,
         clinicLng: row.doctorProfile?.clinicLng ?? null,
         clinicName: row.doctorProfile?.clinicName || null,

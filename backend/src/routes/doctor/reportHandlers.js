@@ -130,7 +130,23 @@ async function approveReport(req, res) {
       },
     });
 
-    return res.json({ message: "Rapport approuve.", status });
+    let linkClosed = false;
+    if (status === "SENT") {
+      const now = new Date();
+      await prisma.doctorPatientLink
+        .updateMany({
+          where: {
+            doctorUserId: req.session.id,
+            patientId: draft.patientId,
+            status: "ACTIVE",
+          },
+          data: { status: "EXPIRED", expiresAt: now },
+        })
+        .catch(() => {});
+      linkClosed = true;
+    }
+
+    return res.json({ message: "Rapport approuve.", status, linkClosed });
   } catch (error) {
     return res.status(500).json({ error: "Erreur approve-report", details: error.message });
   }

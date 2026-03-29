@@ -63,7 +63,7 @@ export default function DoctorSettingsModal({
       : "Modifier mes informations";
 
   return (
-    <ModalShell open={settingsOpen} onClose={onClose} title={title} disableClose={forceProfile}>
+    <ModalShell open={settingsOpen} onClose={onClose} title={title}>
       {settingsError ? <p className="error-text">{settingsError}</p> : null}
       {settingsInfo ? <p className="info-text">{settingsInfo}</p> : null}
       {forceProfile ? (

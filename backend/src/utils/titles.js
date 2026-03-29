@@ -23,8 +23,10 @@ function deriveConversationTitleFromMessage(message, { maxLen = 56 } = {}) {
 function isDefaultConversationTitle(title) {
   const t = String(title || "").trim().toLowerCase();
   return (
+    t === "conversation initiale" ||
     t === "nouvelle discussion" ||
     t === "nouvelle discussion patient" ||
+    t === "nouvelle conversation" ||
     t === "nouveau dossier clinique" ||
     t === "nouveau dossier"
   );
