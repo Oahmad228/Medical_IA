@@ -18,6 +18,7 @@ export default function DoctorArea({ session, onLogout, onSessionUpdate }) {
   const token = session.token;
   const [appointmentsOpen, setAppointmentsOpen] = useState(false);
   const [reportSentOpen, setReportSentOpen] = useState(false);
+  const [indicatorLevel, setIndicatorLevel] = useState("");
   const {
     latestDraftReport,
     draftLoading,
@@ -52,7 +53,10 @@ export default function DoctorArea({ session, onLogout, onSessionUpdate }) {
   const settings = useDoctorSettings({ session, token, onLogout, onSessionUpdate });
   const { checkProfileCompletion, openSettings: openDoctorSettings } = settings;
 
-  const triageTone = String(latestDraftReport?.triageLevel || "").toLowerCase();
+  const headerIndicatorLevel = String(
+    indicatorLevel || latestDraftReport?.triageLevel || ""
+  ).toUpperCase();
+  const triageTone = String(headerIndicatorLevel).toLowerCase();
   const showTriage = ["green", "orange", "red"].includes(triageTone);
   const shouldInlineDraft =
     Boolean(latestDraftReport?.doctorDraftText) &&
@@ -73,7 +77,7 @@ export default function DoctorArea({ session, onLogout, onSessionUpdate }) {
     <div className="chat-head-actions">
       {showTriage ? (
         <span className={`status-pill status-pill--${triageTone}`}>
-          {String(latestDraftReport?.triageLevel || "").toUpperCase()}
+          {String(headerIndicatorLevel || "").toUpperCase()}
         </span>
       ) : null}
       <button
@@ -168,6 +172,7 @@ export default function DoctorArea({ session, onLogout, onSessionUpdate }) {
             latestDraftReport={latestDraftReport}
             onRefreshDraft={refreshLatestDraft}
             onOpenConversationForPatient={openConversationForPatient}
+            onIndicatorChange={setIndicatorLevel}
           />
         }
       />

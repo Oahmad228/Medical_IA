@@ -12,6 +12,7 @@ export default function DoctorToolsPanel({
   latestDraftReport,
   onRefreshDraft,
   onOpenConversationForPatient,
+  onIndicatorChange,
 }) {
   const [pairStatus, setPairStatus] = useState("NONE");
   const [pendingLinks, setPendingLinks] = useState([]);
@@ -26,15 +27,22 @@ export default function DoctorToolsPanel({
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState("");
   const [lookupPatientId, setLookupPatientId] = useState(null);
+  const hasActiveLink = String(pairStatus || "").toUpperCase() === "ACTIVE";
+  const showEmptyState = !composer.patientId || !hasActiveLink;
   const latestSymptom = Array.isArray(patientInfo?.symptomReports)
     ? patientInfo.symptomReports[0]
     : null;
   const triageLevel = latestSymptom?.triageLevel || latestDraftReport?.triageLevel || "";
-  const triageTone = String(triageLevel).toLowerCase();
-  const showTriage = ["green", "orange", "red"].includes(triageTone);
-
-  const hasActiveLink = String(pairStatus || "").toUpperCase() === "ACTIVE";
-  const showEmptyState = !composer.patientId || !hasActiveLink;
+  const indicatorLevel = hasActiveLink
+    ? String(
+        latestSymptom?.emotionLevel ||
+          latestSymptom?.triageLevel ||
+          latestDraftReport?.triageLevel ||
+          ""
+      ).toUpperCase()
+    : "";
+  const indicatorTone = String(indicatorLevel).toLowerCase();
+  const showIndicator = ["green", "orange", "red"].includes(indicatorTone);
   const patientDisplayName =
     patientInfo?.fullName ||
     patientInfo?.user?.fullName ||
@@ -124,6 +132,12 @@ export default function DoctorToolsPanel({
     }, 20000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (typeof onIndicatorChange === "function") {
+      onIndicatorChange(indicatorLevel);
+    }
+  }, [indicatorLevel, onIndicatorChange]);
 
   useEffect(() => {
     const pid = Number(composer.patientId);
@@ -287,9 +301,9 @@ export default function DoctorToolsPanel({
               <h3 className="section-head__title">{patientDisplayName}</h3>
               {patientEmail ? <p className="section-head__hint">{patientEmail}</p> : null}
             </div>
-            {showTriage ? (
-              <span className={`status-pill status-pill--${triageTone}`}>
-                {String(triageLevel || "").toUpperCase()}
+            {showIndicator ? (
+              <span className={`status-pill status-pill--${indicatorTone}`}>
+                {String(indicatorLevel || "").toUpperCase()}
               </span>
             ) : null}
           </div>

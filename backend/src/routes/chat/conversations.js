@@ -1,5 +1,4 @@
 const { prisma } = require("../../db/prisma");
-const { ensureDoctorHasActiveLink } = require("../../services/patientService");
 
 /**
  * [Module: src/routes/chat/conversations.js] listConversations
@@ -106,15 +105,31 @@ async function getConversationMessages(req, res) {
     }
 
     if (req.session.role === "DOCTOR" && conversation.patientId) {
-      if (conversation.lockedUntil && conversation.lockedUntil <= new Date()) {
-        return res.status(403).json({ error: "Acces refuse. Consultation expiree." });
-      }
-      const linkOk = await ensureDoctorHasActiveLink({
-        doctorUserId: req.session.id,
-        patientId: conversation.patientId,
+      const now = new Date();
+      const linkOk = await prisma.doctorPatientLink.findFirst({
+        where: {
+          doctorUserId: req.session.id,
+          patientId: conversation.patientId,
+          status: "ACTIVE",
+          expiresAt: { gt: now },
+        },
+        select: { expiresAt: true },
       });
+
       if (!linkOk) {
         return res.status(403).json({ error: "Acces refuse. OTP requis/expire." });
+      }
+
+      if (
+        !conversation.lockedUntil ||
+        conversation.lockedUntil <= now ||
+        (linkOk.expiresAt && conversation.lockedUntil.getTime() !== linkOk.expiresAt.getTime())
+      ) {
+        await prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { lockedUntil: linkOk.expiresAt || null },
+        });
+        conversation.lockedUntil = linkOk.expiresAt || null;
       }
     }
 

@@ -36,18 +36,43 @@ async function applyDoctorConversationLock({
   const now = new Date();
   const linkedPatientId = patientId;
 
-  if (conversation.lockedUntil && conversation.lockedUntil <= now) {
-    res.status(403).json({ error: "Acces refuse. Consultation expiree." });
-    return false;
-  }
-
   if (conversation.patientId) {
-    if (!linkedPatientId || linkedPatientId !== conversation.patientId) {
+    if (linkedPatientId && linkedPatientId !== conversation.patientId) {
       res.status(403).json({
         error: "Conversation verrouillee pour un autre patient. Creer une nouvelle conversation.",
       });
       return false;
     }
+
+    const link = await prisma.doctorPatientLink.findFirst({
+      where: {
+        doctorUserId: req.session.id,
+        patientId: conversation.patientId,
+        status: "ACTIVE",
+        expiresAt: { gt: now },
+      },
+      select: { expiresAt: true },
+    });
+
+    if (!link) {
+      res.status(403).json({
+        error: "Patient non autorise pour ce medecin. Realisez l'association via OTP.",
+      });
+      return false;
+    }
+
+    if (
+      !conversation.lockedUntil ||
+      conversation.lockedUntil <= now ||
+      (link.expiresAt && conversation.lockedUntil.getTime() !== link.expiresAt.getTime())
+    ) {
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { lockedUntil: link.expiresAt || null },
+      });
+      conversation.lockedUntil = link.expiresAt || null;
+    }
+
     return true;
   }
 
