@@ -50,11 +50,11 @@ window.addEventListener('scroll', () => {
     }
 
     if (window.scrollY > 50) {
-        navbar.style.background = 'rgba(7, 19, 28, 0.95)';
-        navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.5)';
+        navbar.style.background = 'rgba(10, 37, 51, 0.97)';
+        navbar.style.boxShadow = '0 6px 24px rgba(0, 0, 0, 0.35)';
     } else {
-        navbar.style.background = 'rgba(7, 19, 28, 0.85)';
-        navbar.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+        navbar.style.background = 'rgba(10, 37, 51, 0.94)';
+        navbar.style.boxShadow = '0 8px 28px rgba(0, 0, 0, 0.16)';
     }
 });
 

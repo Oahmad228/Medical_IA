@@ -1,21 +1,21 @@
 /* ===== DESIGN ULTRA-MODERNE 2026 ===== */
 
 :root {
-    --primary: #0b1f2a;
-    --primary-light: #123447;
-    --secondary: #0ea5a4;
-    --secondary-light: #22d3ee;
-    --accent: #f59e0b;
+    --primary: #123447;
+    --primary-light: #1f4e66;
+    --secondary: #0f766e;
+    --secondary-light: #2dd4bf;
+    --accent: #2563eb;
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
-    --dark-bg: #07131c;
-    --light-bg: #f6fbff;
-    --text-dark: #0b1f2a;
-    --text-light: #5b6b7a;
+    --dark-bg: #0a2533;
+    --light-bg: #f5fafc;
+    --text-dark: #0f2a3a;
+    --text-light: #334155;
     --border-color: #e2e8f0;
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-bg: rgba(255, 255, 255, 0.92);
+    --glass-border: rgba(148, 163, 184, 0.25);
 }
 
 * {
@@ -32,7 +32,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 body {
-    background: linear-gradient(135deg, #eef6fb 0%, #fef7e8 50%, #edfdfb 100%);
+    background: linear-gradient(135deg, #f3f9fc 0%, #f8fbfd 50%, #f0f8f8 100%);
     color: var(--text-dark);
     line-height: 1.7;
     overflow-x: hidden;
@@ -56,7 +56,7 @@ body::before {
 /* ===== NAVBAR ===== */
 
 .navbar-custom {
-    background: rgba(7, 19, 28, 0.85);
+    background: rgba(10, 37, 51, 0.94);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -69,10 +69,7 @@ body::before {
     font-family: 'Sora', sans-serif;
     font-weight: 800;
     font-size: 1.5rem;
-    background: linear-gradient(135deg, var(--secondary-light), var(--secondary), var(--accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #e6f6ff !important;
     animation: shine 3s ease-in-out infinite;
 }
 
@@ -106,7 +103,7 @@ body::before {
 }
 
 .nav-link:hover {
-    color: var(--secondary-light) !important;
+    color: #d5f6f3 !important;
     transform: translateY(-2px);
 }
 
@@ -173,11 +170,7 @@ body::before {
     font-weight: 900;
     font-size: 3.5rem;
     line-height: 1.1;
-    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(135deg, #ffffff 0%, var(--secondary-light) 55%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
     animation: slideInDown 0.8s ease;
 }
 
@@ -202,8 +195,8 @@ body::before {
 
 .badge-custom {
     display: inline-block;
-    background: rgba(14, 165, 164, 0.2);
-    color: var(--secondary-light);
+    background: rgba(45, 212, 191, 0.22);
+    color: #d8fffb;
     padding: 8px 20px;
     border-radius: 50px;
     font-weight: 600;
@@ -280,13 +273,13 @@ body::before {
 
 .floating-card {
     position: absolute;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.18);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.2);
     border-radius: 12px;
     padding: 24px;
     text-align: center;
-    color: white;
+    color: #ecfeff;
     box-shadow: 0 8px 32px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
 }
@@ -299,7 +292,7 @@ body::before {
 
 .floating-card i {
     font-size: 2.5rem;
-    color: var(--accent);
+    color: #7dd3fc;
     display: block;
     margin-bottom: 12px;
 }
@@ -343,7 +336,7 @@ section > .container {
 }
 
 .section-light {
-    background: linear-gradient(135deg, #f6fbff 0%, #ffffff 100%);
+    background: linear-gradient(135deg, #f5fafc 0%, #ffffff 100%);
 }
 
 .section-dark {
@@ -365,12 +358,8 @@ section > .container {
     pointer-events: none;
 }
 
-.section-dark h4, .section-dark h5 {
-    color: white;
-}
-
 .section-dark .text-muted {
-    color: rgba(255, 255, 255, 0.7) !important;
+    color: rgba(255, 255, 255, 0.82) !important;
 }
 
 /* ===== SECTION HEADERS ===== */
@@ -406,17 +395,11 @@ section > .container {
     font-size: 2.8rem;
     font-weight: 900;
     margin-bottom: 15px;
-    background: linear-gradient(135deg, var(--text-dark), var(--secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text-dark);
 }
 
 .section-dark .section-header h2 {
-    background: linear-gradient(135deg, white, var(--secondary-light));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: white;
 }
 
 .section-header i {
@@ -433,19 +416,20 @@ section > .container {
 
 .card {
     border: none;
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
     transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     overflow: hidden;
+    color: var(--text-dark);
 }
 
 .card:hover {
     transform: translateY(-12px);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-    background: rgba(255, 255, 255, 0.95);
+    background: #ffffff;
 }
 
 .card-img-top {
@@ -464,6 +448,11 @@ section > .container {
     margin-bottom: 12px;
 }
 
+.card p,
+.card li {
+    color: var(--text-light);
+}
+
 .card-text {
     color: var(--text-light);
     line-height: 1.7;
@@ -472,13 +461,14 @@ section > .container {
 /* Conclusion Cards */
 
 .conclusion-card {
-    background: rgba(255, 255, 255, 0.88);
+    background: rgba(255, 255, 255, 0.97);
     backdrop-filter: blur(10px);
     padding: 32px;
     border-radius: 16px;
     box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
     border: 1px solid var(--glass-border);
     height: 100%;
+    color: var(--text-dark);
 }
 
 .conclusion-card h5 {
@@ -496,7 +486,7 @@ section > .container {
 /* Methodology Cards */
 
 .methodology-card {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.97);
     backdrop-filter: blur(10px);
     padding: 35px;
     border-radius: 16px;
@@ -504,6 +494,7 @@ section > .container {
     border-left: 5px solid var(--secondary);
     transition: all 0.3s ease;
     border: 1px solid var(--glass-border);
+    color: var(--text-dark);
 }
 
 .methodology-card:hover {
@@ -530,7 +521,7 @@ section > .container {
 /* Perspective Cards */
 
 .perspective-card {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(10px);
     padding: 30px;
     border-radius: 16px;
@@ -539,6 +530,7 @@ section > .container {
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     height: 100%;
     border: 1px solid var(--glass-border);
+    color: var(--text-dark);
 }
 
 .perspective-card:hover {
@@ -577,6 +569,10 @@ section > .container {
     color: var(--text-light);
     padding: 6px 0;
     line-height: 1.6;
+}
+
+.perspective-card p {
+    color: var(--text-light);
 }
 
 /* Timeline */
@@ -883,7 +879,11 @@ footer p {
 }
 
 footer p.small {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+footer .text-muted {
+    color: rgba(255, 255, 255, 0.9) !important;
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
@@ -967,15 +967,15 @@ footer p.small {
 .callout {
     margin-top: 30px;
     padding: 18px 24px;
-    background: rgba(14, 165, 164, 0.08);
-    border: 1px solid rgba(14, 165, 164, 0.3);
+    background: rgba(15, 118, 110, 0.1);
+    border: 1px solid rgba(15, 118, 110, 0.35);
     border-radius: 12px;
     color: var(--text-dark);
     font-weight: 600;
 }
 
 .callout-dark {
-    background: rgba(245, 158, 11, 0.12);
-    border-color: rgba(245, 158, 11, 0.4);
+    background: rgba(37, 99, 235, 0.2);
+    border-color: rgba(125, 211, 252, 0.45);
     color: rgba(255, 255, 255, 0.95);
 }
