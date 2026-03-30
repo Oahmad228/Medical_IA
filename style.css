@@ -975,8 +975,13 @@ footer .text-muted {
 }
 
 .callout-dark {
-    background: rgba(15, 118, 110, 0.35);
-    border: 2px solid rgba(153, 246, 228, 0.75);
-    color: #ffffff;
-    box-shadow: 0 10px 28px rgba(2, 132, 199, 0.28);
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(15, 118, 110, 0.35);
+    color: var(--text-dark);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+    font-weight: 600;
+}
+
+.callout-dark strong {
+    color: var(--secondary);
 }

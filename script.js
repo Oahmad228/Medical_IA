@@ -28,7 +28,10 @@ const observerOptions = {
 const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry, index) => {
         if (entry.isIntersecting) {
-            entry.target.style.animationDelay = `${index * 0.1}s`;
+            const animationDelay = entry.target.classList.contains('callout')
+                ? '0s'
+                : `${Math.min(index * 0.08, 0.4)}s`;
+            entry.target.style.animationDelay = animationDelay;
             entry.target.classList.add('animate-on-scroll');
         }
     });
