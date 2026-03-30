@@ -1,13 +1,18 @@
 // ===== SMOOTH SCROLL =====
 
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+document.querySelectorAll('a.nav-link, .hero-buttons a').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
+        const targetId = this.getAttribute('href');
+        if (!targetId || !targetId.startsWith('#')) {
+            return;
+        }
+
         e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
+        const targetElement = document.querySelector(targetId);
+        if (targetElement) {
+            window.scrollTo({
+                top: targetElement.offsetTop - 70,
+                behavior: 'smooth'
             });
         }
     });
@@ -31,19 +36,25 @@ const observer = new IntersectionObserver((entries) => {
 
 // Observe all animatable elements
 document.querySelectorAll(
-    '.card, .timeline-item, .methodology-card, .perspective-card, .mvp-card, .conclusion-card, .role-separation-card'
+    '.card, .timeline-item, .methodology-card, .perspective-card, .mvp-card, .conclusion-card, .role-separation-card, .callout'
 ).forEach(item => {
     observer.observe(item);
 });
 
-// ===== NAVBAR SHRINK ON SCROLL =====
+// ===== NAVBAR ON SCROLL =====
 
 window.addEventListener('scroll', () => {
     const navbar = document.querySelector('.navbar-custom');
-    if (window.scrollY > 100) {
-        navbar.style.boxShadow = '0 8px 30px rgba(30, 60, 114, 0.25)';
+    if (!navbar) {
+        return;
+    }
+
+    if (window.scrollY > 50) {
+        navbar.style.background = 'rgba(7, 19, 28, 0.95)';
+        navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.5)';
     } else {
-        navbar.style.boxShadow = '0 4px 20px rgba(30, 60, 114, 0.15)';
+        navbar.style.background = 'rgba(7, 19, 28, 0.85)';
+        navbar.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
     }
 });
 
