@@ -1,38 +1,38 @@
 /* ===== DESIGN ULTRA-MODERNE 2026 ===== */
 
 :root {
-    --primary: #0f172a;
-    --primary-light: #1e293b;
-    --secondary: #06b6d4;
+    --primary: #0b1f2a;
+    --primary-light: #123447;
+    --secondary: #0ea5a4;
     --secondary-light: #22d3ee;
-    --accent: #ec4899;
+    --accent: #f59e0b;
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
-    --dark-bg: #020617;
-    --light-bg: #f0f9ff;
-    --text-dark: #0f172a;
-    --text-light: #64748b;
+    --dark-bg: #07131c;
+    --light-bg: #f6fbff;
+    --text-dark: #0b1f2a;
+    --text-light: #5b6b7a;
     --border-color: #e2e8f0;
     --glass-bg: rgba(255, 255, 255, 0.7);
     --glass-border: rgba(255, 255, 255, 0.2);
 }
 
 * {
-    font-family: 'Segoe UI', 'Poppins', sans-serif;
+    font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Sora', sans-serif;
     font-weight: 700;
     letter-spacing: -0.5px;
 }
 
 body {
-    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--primary) 50%, var(--primary-light) 100%);
+    background: linear-gradient(135deg, #eef6fb 0%, #fef7e8 50%, #edfdfb 100%);
     color: var(--text-dark);
     line-height: 1.7;
     overflow-x: hidden;
@@ -46,9 +46,9 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-        radial-gradient(circle at 20% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+    background:
+        radial-gradient(circle at 15% 35%, rgba(14, 165, 164, 0.12) 0%, transparent 55%),
+        radial-gradient(circle at 80% 75%, rgba(245, 158, 11, 0.1) 0%, transparent 55%);
     z-index: -1;
     pointer-events: none;
 }
@@ -56,7 +56,7 @@ body::before {
 /* ===== NAVBAR ===== */
 
 .navbar-custom {
-    background: rgba(15, 23, 42, 0.8);
+    background: rgba(7, 19, 28, 0.85);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -66,10 +66,10 @@ body::before {
 }
 
 .navbar-brand {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Sora', sans-serif;
     font-weight: 800;
     font-size: 1.5rem;
-    background: linear-gradient(135deg, var(--secondary-light), #06b6d4, var(--accent));
+    background: linear-gradient(135deg, var(--secondary-light), var(--secondary), var(--accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -113,7 +113,7 @@ body::before {
 /* ===== HERO SECTION ===== */
 
 .hero-section {
-    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--primary) 30%, var(--primary-light) 100%);
+    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--primary) 35%, var(--primary-light) 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -129,7 +129,7 @@ body::before {
     right: -5%;
     width: 50vw;
     height: 50vw;
-    background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.18) 0%, transparent 70%);
     border-radius: 50%;
     animation: float 8s ease-in-out infinite;
 }
@@ -141,7 +141,7 @@ body::before {
     left: -10%;
     width: 40vw;
     height: 40vw;
-    background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
     border-radius: 50%;
     animation: float 10s ease-in-out infinite reverse;
 }
@@ -174,7 +174,7 @@ body::before {
     font-size: 3.5rem;
     line-height: 1.1;
     text-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(135deg, #ffffff 0%, var(--secondary-light) 50%, var(--accent) 100%);
+    background: linear-gradient(135deg, #ffffff 0%, var(--secondary-light) 55%, var(--accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -202,7 +202,7 @@ body::before {
 
 .badge-custom {
     display: inline-block;
-    background: rgba(6, 182, 212, 0.2);
+    background: rgba(14, 165, 164, 0.2);
     color: var(--secondary-light);
     padding: 8px 20px;
     border-radius: 50px;
@@ -299,7 +299,7 @@ body::before {
 
 .floating-card i {
     font-size: 2.5rem;
-    color: var(--secondary-light);
+    color: var(--accent);
     display: block;
     margin-bottom: 12px;
 }
@@ -331,16 +331,23 @@ body::before {
 /* ===== SECTIONS ===== */
 
 section {
-    padding: 80px 0;
+    padding: 90px 0;
     position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+section > .container {
+    width: 100%;
 }
 
 .section-light {
-    background: linear-gradient(135deg, #f0f9ff 0%, white 100%);
+    background: linear-gradient(135deg, #f6fbff 0%, #ffffff 100%);
 }
 
 .section-dark {
-    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--primary) 50%, var(--primary-light) 100%);
+    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--primary) 55%, var(--primary-light) 100%);
     color: white;
     position: relative;
 }
@@ -352,9 +359,9 @@ section {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-        radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 100% 50%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+    background:
+        radial-gradient(circle at 50% 0%, rgba(14, 165, 164, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 100% 60%, rgba(245, 158, 11, 0.1) 0%, transparent 50%);
     pointer-events: none;
 }
 
@@ -380,7 +387,7 @@ section {
     justify-content: center;
     width: 70px;
     height: 70px;
-    background: linear-gradient(135deg, var(--secondary), var(--secondary-light));
+    background: linear-gradient(135deg, var(--secondary), var(--accent));
     color: white;
     border-radius: 20px;
     font-weight: 900;
@@ -462,6 +469,30 @@ section {
     line-height: 1.7;
 }
 
+/* Conclusion Cards */
+
+.conclusion-card {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--glass-border);
+    height: 100%;
+}
+
+.conclusion-card h5 {
+    color: var(--text-dark);
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.conclusion-card p,
+.conclusion-card li {
+    color: var(--text-light);
+    line-height: 1.7;
+}
+
 /* Methodology Cards */
 
 .methodology-card {
@@ -504,7 +535,7 @@ section {
     padding: 30px;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-    border-left: 5px solid var(--primary);
+    border-left: 5px solid var(--accent);
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     height: 100%;
     border: 1px solid var(--glass-border);
@@ -532,7 +563,7 @@ section {
     justify-content: center;
     font-size: 1.8rem;
     margin-bottom: 15px;
-    background: rgba(6, 182, 212, 0.1);
+    background: rgba(14, 165, 164, 0.12);
 }
 
 .perspective-card ul {
@@ -828,7 +859,7 @@ section {
 /* ===== FOOTER ===== */
 
 footer {
-    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--primary) 50%, var(--primary-light) 100%);
+    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--primary) 55%, var(--primary-light) 100%);
     color: white;
     padding: 60px 0 30px;
     text-align: center;
@@ -931,59 +962,20 @@ footer p.small {
     animation: slideInUp 0.6s ease forwards;
 }
 
-/* ===== RESPONSIVE ===== */
+/* ===== CALLOUTS ===== */
 
-/* Architecture Box */
-
-.architecture-box {
-    background: white;
-    padding: 25px;
+.callout {
+    margin-top: 30px;
+    padding: 18px 24px;
+    background: rgba(14, 165, 164, 0.08);
+    border: 1px solid rgba(14, 165, 164, 0.3);
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    border-left: 4px solid var(--secondary);
-    transition: all 0.3s ease;
+    color: var(--text-dark);
+    font-weight: 600;
 }
 
-.architecture-box:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-}
-
-.architecture-box h6 {
-    color: var(--primary);
-    font-weight: 700;
-}
-
-.architecture-box ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.architecture-box li {
-    font-size: 0.95rem;
-    color: var(--text-light);
-    padding: 6px 0;
-    line-height: 1.6;
-}
-
-/* Role Box */
-
-.role-box {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.role-box ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.role-box li {
-    padding: 8px 0;
-    font-size: 0.95rem;
-    line-height: 1.6;
+.callout-dark {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: rgba(255, 255, 255, 0.95);
 }
